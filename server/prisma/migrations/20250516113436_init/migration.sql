@@ -152,6 +152,7 @@ CREATE TABLE `ScheduledFilm` (
 
 -- CreateTable
 CREATE TABLE `ScreenAttribute` (
+    `mainID` INTEGER NOT NULL AUTO_INCREMENT,
     `id` VARCHAR(191) NOT NULL,
     `cinemaId` VARCHAR(191) NOT NULL,
     `screenNumber` INTEGER NOT NULL,
@@ -160,7 +161,7 @@ CREATE TABLE `ScreenAttribute` (
     `description` VARCHAR(191) NULL,
     `descriptionAlt` VARCHAR(191) NULL,
 
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`mainID`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -255,6 +256,45 @@ CREATE TABLE `SessionInSeatDeliveryFee` (
     `id` VARCHAR(191) NOT NULL,
     `priceType` INTEGER NOT NULL,
     `fixedPriceInCents` INTEGER NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Booking` (
+    `id` VARCHAR(191) NOT NULL,
+    `filmId` VARCHAR(191) NOT NULL,
+    `customerName` VARCHAR(191) NOT NULL,
+    `customerEmail` VARCHAR(191) NOT NULL,
+    `showTime` DATETIME(3) NOT NULL,
+    `totalAmount` DOUBLE NOT NULL,
+    `status` ENUM('PENDING', 'CONFIRMED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Transaction` (
+    `id` VARCHAR(191) NOT NULL,
+    `bookingId` VARCHAR(191) NOT NULL,
+    `paymentMethod` ENUM('CREDIT_CARD', 'DEBIT_CARD', 'NET_BANKING', 'UPI', 'WALLET') NOT NULL,
+    `amount` DOUBLE NOT NULL,
+    `transactionId` VARCHAR(191) NOT NULL,
+    `status` ENUM('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED') NOT NULL DEFAULT 'PENDING',
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `Transaction_bookingId_key`(`bookingId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Seat` (
+    `id` VARCHAR(191) NOT NULL,
+    `bookingId` VARCHAR(191) NOT NULL,
+    `seatNumber` VARCHAR(191) NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -371,13 +411,19 @@ ALTER TABLE `CinemaOperator` ADD CONSTRAINT `CinemaOperator_cinemaId_fkey` FOREI
 ALTER TABLE `Session` ADD CONSTRAINT `Session_cinemaId_fkey` FOREIGN KEY (`cinemaId`) REFERENCES `Cinema`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Session` ADD CONSTRAINT `Session_scheduledFilmId_fkey` FOREIGN KEY (`scheduledFilmId`) REFERENCES `ScheduledFilm`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE `Session` ADD CONSTRAINT `Session_inSeatDeliveryFeeId_fkey` FOREIGN KEY (`inSeatDeliveryFeeId`) REFERENCES `SessionInSeatDeliveryFee`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `SessionAreaCategory` ADD CONSTRAINT `SessionAreaCategory_sessionId_fkey` FOREIGN KEY (`sessionId`) REFERENCES `Session`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Booking` ADD CONSTRAINT `Booking_filmId_fkey` FOREIGN KEY (`filmId`) REFERENCES `Film`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Transaction` ADD CONSTRAINT `Transaction_bookingId_fkey` FOREIGN KEY (`bookingId`) REFERENCES `Booking`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Seat` ADD CONSTRAINT `Seat_bookingId_fkey` FOREIGN KEY (`bookingId`) REFERENCES `Booking`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `_FilmSynopsisTranslations` ADD CONSTRAINT `_FilmSynopsisTranslations_A_fkey` FOREIGN KEY (`A`) REFERENCES `Film`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

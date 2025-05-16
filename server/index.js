@@ -9,6 +9,7 @@ const fetchSessions = require('./router/fetchsessions');
 const fetchCinema = require('./router/Fetchcinema');
 const fetchfilm = require('./router/Fetchfilm');
 const fetchscreen = require('./router/Fetchscreen');
+const bookingRoute = require('./router/booking')
 const cors = require('cors');
 
 const app = express();
@@ -23,6 +24,7 @@ app.use('/', fetchCinema);
 app.use('/', fetchSessions);
 app.use('/', fetchfilm);
 app.use('/', fetchscreen);
+app.use('/',bookingRoute);
 app.get('/', (req, res) => {
   res.send('Welcome to the Cinema Booking System API');
 });

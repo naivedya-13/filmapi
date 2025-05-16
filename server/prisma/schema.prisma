@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "./node_modules/@prisma/client"
 }
 
 datasource db {
@@ -53,6 +52,7 @@ model Film {
 
   filmRatingStatisticsId         String?  @unique // Added @unique to fix one-to-one relation
   filmTrailerRatingStatisticsId  String?  @unique // Added @unique to fix one-to-one relation
+  bookings Booking[]
 }
 
 model FilmFormatCode {
@@ -279,4 +279,57 @@ model SessionInSeatDeliveryFee {
   priceType           Int
   fixedPriceInCents   Int?
   session             Session?
+}
+model Booking {
+  id               String   @id @default(uuid())
+  filmId           String
+  film             Film      @relation(fields: [filmId], references: [id])
+  customerName     String
+  customerEmail    String
+  showTime         DateTime
+  seats            Seat[]  // Array of seat numbers like ["A1", "A2"]
+  totalAmount      Float
+  transaction      Transaction?
+  status           BookingStatus @default(PENDING)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Transaction {
+  id               String   @id @default(uuid())
+  bookingId        String        @unique
+  booking          Booking   @relation(fields: [bookingId], references: [id])
+  paymentMethod    PaymentMethod
+  amount           Float
+  transactionId    String    // External payment gateway ID
+  status           TransactionStatus @default(PENDING)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  NET_BANKING
+  UPI
+  WALLET
+}
+model Seat {
+  id        String   @id @default(uuid())
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  bookingId String
+  seatNumber String
 }

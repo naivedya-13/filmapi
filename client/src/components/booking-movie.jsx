@@ -22,6 +22,7 @@ const BookingMovie = () => {
   const handleMovieBooking = (film) => {
     navigate("/seat-booking", {
       state: {
+        filmId: film.id,
         movieTitle: film.title,
         openingDate: film.openingDate,
         distributorName: film.distributorName,
