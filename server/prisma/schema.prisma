@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./node_modules/@prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Film {
+  id                             String   @id @default(uuid())
+  shortCode                      String?
+  title                          String?
+  rating                         String?
+  ratingDescription              String?
+  synopsis                       String?
+  synopsisAlt                    String?
+  shortSynopsis                  String?
+  shortSynopsisAlt               String?
+  hoFilmCode                     String?
+  corporateFilmId                String?
+  runTime                        Int?
+  openingDate                    String?
+  graphicUrl                     String?
+  filmNameUrl                    String?
+  trailerUrl                     String?
+  isComingSoon                   Boolean
+  isScheduledAtCinema            Boolean
+  titleAlt                       String?
+  ratingAlt                      String?
+  ratingDescriptionAlt           String?
+  websiteUrl                     String?
+  genreId                        String?
+  genreId2                       String?
+  genreId3                       String?
+  ediCode                        String?
+  twitterTag                     String?
+  filmWebId                      String?
+  movieXchangeCode               String?
+  distributorName                String?
+  governmentCode                 String?
+
+  // Relations
+  formatCodes                    FilmFormatCode[]
+  synopsisTranslations           Translation[]        @relation("FilmSynopsisTranslations")
+  titleTranslations              Translation[]        @relation("FilmTitleTranslations")
+  shortSynopsisTranslations      Translation[]        @relation("FilmShortSynopsisTranslations")
+  ratingDescriptionTranslations  Translation[]        @relation("FilmRatingDescriptionTranslations")
+  additionalUrls                 FilmAdditionalUrl[]
+  customerRatingStatistics       FilmRatingStatistics?        @relation(fields: [filmRatingStatisticsId], references: [id])
+  customerRatingTrailerStatistics FilmTrailerRatingStatistics? @relation(fields: [filmTrailerRatingStatisticsId], references: [id])
+
+  filmRatingStatisticsId         String?  @unique // Added @unique to fix one-to-one relation
+  filmTrailerRatingStatisticsId  String?  @unique // Added @unique to fix one-to-one relation
+}
+
+model FilmFormatCode {
+  id       String @id @default(uuid())
+  film     Film   @relation(fields: [filmId], references: [id])
+  filmId   String
+  code     String
+}
+
+model Translation {
+  id           String   @id @default(uuid())
+  languageTag  String
+  text         String
+
+  // Reverse relations
+  filmSynopsisTranslations            Film[] @relation("FilmSynopsisTranslations")
+  filmTitleTranslations               Film[] @relation("FilmTitleTranslations")
+  filmShortSynopsisTranslations       Film[] @relation("FilmShortSynopsisTranslations")
+  filmRatingDescriptionTranslations   Film[] @relation("FilmRatingDescriptionTranslations")
+  attributeDescriptionTranslations    Attribute[] @relation("AttributeDescriptionTranslations")
+  attributeShortNameTranslations      Attribute[] @relation("AttributeShortNameTranslations")
+  attributeMessageTranslations        Attribute[] @relation("AttributeMessageTranslations")
+}
+
+model FilmAdditionalUrl {
+  id          String   @id @default(uuid())
+  film        Film     @relation(fields: [filmId], references: [id])
+  filmId      String
+  sequence    Int
+  description String?
+  url         String?
+}
+
+model FilmRatingStatistics {
+  id           String   @id @default(uuid())
+  ratingCount  Int
+  averageScore Float?
+  film         Film?
+}
+
+model FilmTrailerRatingStatistics {
+  id               String   @id @default(uuid())
+  ratingCount      Int
+  ratingCountLiked Int
+  film             Film?
+}
+
+model Cinema {
+  id                             String   @id @default(uuid())
+  cinemaNationalId               String?  @unique
+  name                           String
+  nameAlt                        String?
+  phoneNumber                    String?
+  emailAddress                   String?
+  address1                       String?
+  address2                       String?
+  city                           String?
+  latitude                       Float?
+  longitude                      Float?
+  parkingInfo                    String?
+  loyaltyCode                    String?
+  isGiftStore                    Boolean?
+  description                    String?
+  descriptionAlt                 String?
+  publicTransport                String?
+  currencyCode                   String?
+  allowPrintAtHomeBookings       Boolean
+  allowOnlineVoucherValidation   Boolean
+  displaySofaSeats               Boolean
+  timeZoneId                     String?
+  hopk                           String?
+  tipsCompulsory                 Boolean
+  tipPercentages                 String?
+  serverName                     String?
+  primaryDataLanguage            String?
+  alternateDataLanguage1         String?
+  alternateDataLanguage2         String?
+  alternateDataLanguage3         String?
+  hasConcessions                 Boolean?
+
+  // Relations
+  screenAttributes               ScreenAttribute[]
+  conceptAttributes              Attribute[]
+  cinemaOperators                CinemaOperator[]
+  scheduledFilms                 ScheduledFilm[]
+  sessions                       Session[]
+}
+
+model ScheduledFilm {
+  id                             String   @id @default(uuid())
+  cinemaId                       String
+  title                          String
+  titleAlt                       String?
+  distributor                    String?
+  rating                         String?
+  ratingAlt                      String?
+  synopsis                       String?
+  synopsisAlt                    String?
+  openingDate                    DateTime?
+  filmHopk                       String?
+  filmHoCode                     String?
+  shortCode                      String?
+  runTime                        String?
+  trailerUrl                     String?
+  loyaltyAdvanceBookingDate      DateTime?
+  advanceBookingDate             DateTime?
+  hasDynamicallyPricedTickets    Boolean
+  isPlayThroughMarketingFilm     Boolean
+
+  // Relations
+  cinema                         Cinema  @relation(fields: [cinemaId], references: [id])
+  
+  playThroughFilms               ScheduledFilm[] @relation("PlayThroughFilms")
+  parentPlayThroughFilm          ScheduledFilm? @relation("PlayThroughFilms", fields: [parentPlayThroughFilmId], references: [id])
+  parentPlayThroughFilmId        String?
+}
+
+model ScreenAttribute {
+  mainID          Int @id @default(autoincrement())
+  id              String   
+  cinemaId        String
+  screenNumber    Int
+  shortName       String?
+  isConcept       Boolean
+  description     String?
+  descriptionAlt  String?
+
+  // Relations
+  cinema          Cinema  @relation(fields: [cinemaId], references: [id])
+}
+
+model Attribute {
+  id                               String   @id @default(uuid())
+  description                      String?
+  shortName                        String?
+  altDescription                   String?
+  altShortName                     String?
+  message                          String?
+  messageAlt                       String?
+  warningMessage                   String?
+  warningMessageAlt                String?
+  salesChannels                    String?
+  isUsedForConcepts                Boolean
+  isUsedForSessionAdvertising      Boolean
+  displayPriority                  Int
+  isPromoted                       Boolean
+
+  // Relations
+  descriptionTranslations          Translation[] @relation("AttributeDescriptionTranslations")
+  shortNameTranslations            Translation[] @relation("AttributeShortNameTranslations")
+  messageTranslations              Translation[] @relation("AttributeMessageTranslations")
+  sessionAttributeCinemas          SessionAttributeCinema[]
+  cinemaAttributes                 Cinema[]
+  sessions                         Session[] // Added missing relation field
+}
+
+model SessionAttributeCinema {
+  id          String   @id @default(uuid())
+  attribute   Attribute @relation(fields: [attributeId], references: [id])
+  attributeId String
+  cinemaId    String
+}
+
+model CinemaOperator {
+  id                             String   @id @default(uuid())
+  cinemaId                       String
+  code                           String?
+  name                           String?
+  shortName                      String?
+  isDefault                      Boolean
+  hoOperatorCode                 String?
+
+  // Relations
+  cinema                         Cinema  @relation(fields: [cinemaId], references: [id])
+}
+
+model Session {
+  id                               String   @id @default(uuid())
+  cinemaId                         String
+  scheduledFilmId                  String
+  sessionId                        String
+  showtime                         DateTime
+  isAllocatedSeating               Boolean
+  allowChildAdmits                 Boolean
+  seatsAvailable                   Int?
+  allowComplimentaryTickets        Boolean
+  eventId                          String?
+  globalEventId                    String?
+  priceGroupCode                   String?
+  screenName                       String?
+  screenNameAlt                    String?
+  screenNumber                     Int?
+  cinemaOperatorCode               String?
+  formatCode                       String?
+  formatHOPK                       String?
+  salesChannels                    String?
+  allowTicketSales                 Boolean
+  hasDynamicallyPricedTickets      Boolean
+  playThroughId                    String?
+  sessionBusinessDate              String
+  sessionDisplayPriority           Int
+  groupSessionsByAttribute         Boolean
+  soldoutStatus                    Int?
+  typeCode                         String?
+  minimumTicketPriceInCents        Int?
+  inSeatDeliveryFeeId              String?  @unique // Added @unique to fix one-to-one relation
+
+  // Relations
+  areaCategories                   SessionAreaCategory[]
+  attributes                       Attribute[]
+  cinema                           Cinema    @relation(fields: [cinemaId], references: [id])
+  inSeatDeliveryFee                SessionInSeatDeliveryFee? @relation(fields: [inSeatDeliveryFeeId], references: [id])
+}
+
+model SessionAreaCategory {
+  id          String   @id @default(uuid())
+  session     Session  @relation(fields: [sessionId], references: [id])
+  sessionId   String
+  code        String
+}
+
+model SessionInSeatDeliveryFee {
+  id                  String   @id @default(uuid())
+  priceType           Int
+  fixedPriceInCents   Int?
+  session             Session?
+}
