@@ -116,7 +116,7 @@ const SeatBooking = () => {
             A confirmation email has been sent to {customerEmail}
           </p>
           <button
-            onClick={() => (window.location.href = "/movies")}
+            onClick={() => (window.location.href = "/movie")}
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Back to Movies
