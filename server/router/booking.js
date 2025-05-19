@@ -3,7 +3,7 @@ const router = express.Router();
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
- router.post(`/post`, async (req, res) => {
+ router.post('/post', async (req, res) => {
   const { filmId, customerName, customerEmail,seats,showTime,totalAmount} = req.body
   const result = await prisma.booking.create({
     data: {
@@ -22,6 +22,15 @@ const prisma = new PrismaClient();
   }
   })
   res.json(result)
+})
+
+router.get('/fetchbookings',async(req,res)=>{
+  const bookingData = await prisma.booking.findMany({
+    include:{
+      seats:true,
+    }
+  })
+  res.json(bookingData)
 })
 
 module.exports = router;

@@ -286,7 +286,7 @@ model Booking {
   film             Film      @relation(fields: [filmId], references: [id])
   customerName     String
   customerEmail    String
-  showTime         DateTime
+  showTime         String
   seats            Seat[]  // Array of seat numbers like ["A1", "A2"]
   totalAmount      Float
   transaction      Transaction?
