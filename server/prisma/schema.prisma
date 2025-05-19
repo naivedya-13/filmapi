@@ -39,6 +39,7 @@ model Film {
   movieXchangeCode               String?
   distributorName                String?
   governmentCode                 String?
+  ticketPrice                    Int @default(100)
 
   // Relations
   formatCodes                    FilmFormatCode[]
@@ -287,7 +288,7 @@ model Booking {
   customerName     String
   customerEmail    String
   showTime         String
-  seats            Seat[]  // Array of seat numbers like ["A1", "A2"]
+  seats            Json  
   totalAmount      Float
   transaction      Transaction?
   status           BookingStatus @default(PENDING)
@@ -301,7 +302,7 @@ model Transaction {
   booking          Booking   @relation(fields: [bookingId], references: [id])
   paymentMethod    PaymentMethod
   amount           Float
-  transactionId    String    // External payment gateway ID
+  transactionId    String    
   status           TransactionStatus @default(PENDING)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -326,10 +327,4 @@ enum PaymentMethod {
   NET_BANKING
   UPI
   WALLET
-}
-model Seat {
-  id        String   @id @default(uuid())
-  booking   Booking @relation(fields: [bookingId], references: [id])
-  bookingId String
-  seatNumber String
 }

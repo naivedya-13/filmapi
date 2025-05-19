@@ -121,8 +121,6 @@ async function syncScreen() {
               description: screenAttr.Description,
               descriptionAlt: screenAttr.DescriptionAlt,
             };
-
-            // Find if the screen already exists using findFirst with composite condition
             const existingScreen = await prisma.screenAttribute.findFirst({
               where: {
                 cinemaId: screenAttr.CinemaId,
