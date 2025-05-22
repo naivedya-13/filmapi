@@ -1,68 +1,84 @@
-const express = require("express");
-const { PrismaClient } = require("@prisma/client");
 
-const router = express.Router();
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const router = express.Router();
 
-router.post("/films/search", async (req, res) => {
+router.post('/bookings', async (req, res) => {
   try {
-    const { title, from, page = 1, limit = 10 } = req.body;
+    const { sessionId, filmId, seats, cinemaId, showtime, price } = req.body;
 
-    const filters = {};
-    if (title?.trim()) {
-      filters.title = {
-        contains: title.trim(),
-      };
-    }
-    if (from?.trim()) {
-      const fromDate = new Date(from);
-      if (!isNaN(fromDate.getTime())) {
-        const dateStr = fromDate.toISOString().split("T")[0];
-        filters.openingDate = {
-          gte: dateStr,
-        };
-      }
+    // Validate input
+    if (!sessionId || !filmId || !seats || !cinemaId || !showtime || !price) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const parsedPage = Math.max(parseInt(page) || 1, 1);
-    const parsedLimit = Math.min(Math.max(parseInt(limit) || 10, 1), 100);
-    const skip = (parsedPage - 1) * parsedLimit;
+    // Check if seats are available
+    const session = await prisma.session.findUnique({
+      where: { SessionId: sessionId },
+    });
 
-    const films = await prisma.film.findMany({
-      where: filters,
-      orderBy: { title: "asc" },
-      skip,
-      take: parsedLimit,
-      select: {
-        id: true,
-        title: true,
-        rating: true,
-        isComingSoon: true,
-        isScheduledAtCinema: true,
-        distributorName: true,
-        openingDate: true,
-        synopsis: true,
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.SeatsAvailable < seats) {
+      return res.status(400).json({ error: 'Not enough seats available' });
+    }
+
+    // Create booking
+    const booking = await prisma.booking.create({
+      data: {
+        sessionId,
+        filmId,
+        cinemaId,
+        seats,
+        totalPrice: price * seats,
+        showtime: new Date(showtime),
+        status: 'CONFIRMED',
       },
     });
 
-    const total = await prisma.film.count({ where: filters });
-
-    res.status(200).json({
-      data: films,
-      pagination: {
-        page: parsedPage,
-        limit: parsedLimit,
-        total,
-        pages: Math.ceil(total / parsedLimit),
+    // Update available seats
+    await prisma.session.update({
+      where: { SessionId: sessionId },
+      data: {
+        SeatsAvailable: {
+          decrement: seats,
+        },
       },
     });
+
+    res.status(201).json(booking);
   } catch (error) {
-    console.error("Error in /films/search:", error);
-    res.status(500).json({
-      error: "Failed to search films",
-      details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
+    console.error('Booking error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    await prisma.$disconnect();
+  }
+});
+router.get("/fetch-films", async (req, res) => {
+  try {
+    const now = new Date().toISOString();
+    const films = await prisma.session.findMany({
+      where: {
+        Showtime: {
+          gte: now,
+        },
+      },
+      include: {
+        film: true,
+      },
     });
+    
+    // Explicitly set content-type
+    res.setHeader('Content-Type', 'application/json');
+    res.status(200).json(films);
+  } catch (error) {
+    console.error("Error fetching films with sessions:", error);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    await prisma.$disconnect(); 
   }
 });
 

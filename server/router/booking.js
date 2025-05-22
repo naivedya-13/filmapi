@@ -24,6 +24,8 @@ const total = parseInt(seatLength) * film.ticketPrice;
       seats: seats,
       showTime,
       totalAmount:total,
+      Bookingstatus,     
+      Transactionstatus 
     },
   });
   res.json(result);

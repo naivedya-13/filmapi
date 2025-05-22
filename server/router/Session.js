@@ -1,10 +1,8 @@
-const dotenv = require("dotenv");
+require("dotenv").config();
 const axios = require("axios");
 const { PrismaClient } = require("@prisma/client");
-const express = require("express");
-
-dotenv.config();
 const prisma = new PrismaClient();
+const express = require("express");
 const router = express.Router();
 
 const CONFIG = {
@@ -47,153 +45,125 @@ async function withRetry(operation, context = "") {
 async function syncSession() {
   try {
     const startTime = new Date();
-    const sessions = await withRetry(() =>
-      api.get("Sessions").then((res) => res.data.value), "fetchSessions"
+    const session = await withRetry(
+      () => api.get("Sessions").then((res) => res.data.value),
+      "fetchsession"
     );
 
-    for (let i = 0; i < sessions.length; i += CONFIG.batchSize) {
-      const batch = sessions.slice(i, i + CONFIG.batchSize);
+    for (let i = 0; i < session.length; i += CONFIG.batchSize) {
+      const batch = session.slice(i, i + CONFIG.batchSize);
 
       await Promise.all(
-        batch.map(async (session) => {
+        batch.map(async (sessionData) => {
           try {
-
-            // Handle nested SessionInSeatDeliveryFee if available
-            let inSeatDeliveryFeeId = null;
-            if (session.InSeatDeliveryFee) {
-              const fee = await prisma.sessionInSeatDeliveryFee.create({
-                data: {
-                  priceType: session.InSeatDeliveryFee.PriceType,
-                  fixedPriceInCents: session.InSeatDeliveryFee.FixedPriceInCents,
-                },
-              });
-              inSeatDeliveryFeeId = fee.id;
-            }
-
-            const sessionData = {
-              id: session.ID,
-              cinemaId: session.CinemaId,
-              scheduledFilmId: session.ScheduledFilmId,
-              sessionId: session.SessionId,
-              showtime: new Date(session.Showtime),
-              isAllocatedSeating: session.IsAllocatedSeating,
-              allowChildAdmits: session.AllowChildAdmits,
-              seatsAvailable: session.SeatsAvailable,
-              allowComplimentaryTickets: session.AllowComplimentaryTickets,
-              eventId: session.EventId,
-              globalEventId: session.GlobalEventId,
-              priceGroupCode: session.PriceGroupCode,
-              screenName: session.ScreenName,
-              screenNameAlt: session.ScreenNameAlt,
-              screenNumber: session.ScreenNumber,
-              cinemaOperatorCode: session.CinemaOperatorCode,
-              formatCode: session.FormatCode,
-              formatHOPK: session.FormatHOPK,
-              salesChannels: session.SalesChannels,
-              allowTicketSales: session.AllowTicketSales,
-              hasDynamicallyPricedTickets: session.HasDynamicallyPricedTicketsAvailable,
-              playThroughId: session.PlayThroughId,
-              sessionBusinessDate: session.SessionBusinessDate,
-              sessionDisplayPriority: session.SessionDisplayPriority,
-              groupSessionsByAttribute: session.GroupSessionsByAttribute,
-              soldoutStatus: session.SoldoutStatus,
-              typeCode: session.TypeCode,
-              minimumTicketPriceInCents: session.MinimumTicketPriceInCents,
-              inSeatDeliveryFeeId,
-            };
-
-            await prisma.session.upsert({
-              where: { id: session.ID },
-              update: sessionData,
-              create: sessionData,
-            });
-
-            // Handle Area Categories
-            await prisma.sessionAreaCategory.deleteMany({
-              where: { sessionId: session.ID },
-            });
-            if (session.AreaCategoryCodes?.length) {
-              await prisma.sessionAreaCategory.createMany({
-                data: session.AreaCategoryCodes.map((code) => ({
-                  sessionId: session.ID,
-                  code,
-                })),
-              });
-            }
-
-            // Handle Attributes
-            for (const attr of session.Attributes || []) {
-              await prisma.attribute.upsert({
-                where: { id: attr.ID },
+            await prisma.$transaction(async (tx) => {
+              await tx.session.upsert({
+                where: { ID: sessionData.ID },
                 update: {
-                  description: attr.Description,
-                  shortName: attr.ShortName,
-                  altDescription: attr.AltDescription,
-                  altShortName: attr.AltShortName,
-                  message: attr.Message,
-                  messageAlt: attr.MessageAlt,
-                  warningMessage: attr.WarningMessage,
-                  warningMessageAlt: attr.WarningMessageAlt,
-                  salesChannels: attr.SalesChannels,
-                  isUsedForConcepts: attr.IsUsedForConcepts,
-                  isUsedForSessionAdvertising: attr.IsUsedForSessionAdvertising,
-                  displayPriority: attr.DisplayPriority,
-                  isPromoted: attr.IsPromoted,
+                    CinemaId: sessionData.CinemaId,
+                  cinema: sessionData.cinema,
+                  ScheduledFilmId: sessionData.ScheduledFilmId,
+                  SessionId: sessionData.SessionId,
+                  AreaCategoryCodes: sessionData.AreaCategoryCodes,
+                  MinimumTicketPriceInCents:
+                    sessionData.MinimumTicketPriceInCents,
+                  Showtime: sessionData.Showtime,
+                  IsAllocatedSeating: sessionData.IsAllocatedSeating.toString(),
+                  AllowChildAdmits: sessionData.AllowChildAdmits.toString(),
+                  SeatsAvailable: sessionData.SeatsAvailable,
+                  AllowComplimentaryTickets:
+                    sessionData.AllowComplimentaryTickets.toString(),
+                  EventId: sessionData.EventId,
+                  GlobalEventId: sessionData.GlobalEventId,
+                  PriceGroupCode: sessionData.PriceGroupCode,
+                  ScreenName: sessionData.ScreenName,
+                  ScreenNameAlt: sessionData.ScreenNameAlt,
+                  ScreenNumber: sessionData.ScreenNumber,
+                  CinemaOperatorCode: sessionData.CinemaOperatorCode,
+                  FormatCode: sessionData.FormatCode,
+                  FormatHOPK: sessionData.FormatHOPK,
+                  SalesChannels: sessionData.SalesChannels,
+                  Attributes: sessionData.Attributes,
+                  SessionAttributesNames: sessionData.SessionAttributesNames,
+                  ConceptAttributesNames: sessionData.ConceptAttributesNames,
+                  AllowTicketSales: sessionData.AllowTicketSales.toString(),
+                  HasDynamicallyPricedTicketsAvailable:
+                    sessionData.HasDynamicallyPricedTicketsAvailable.toString(),
+                  PlayThroughId: sessionData.PlayThroughId,
+                  SessionBusinessDate: sessionData.SessionBusinessDate,
+                  SessionDisplayPriority: sessionData.SessionDisplayPriority.toString(),
+                  GroupSessionsByAttribute:
+                    sessionData.GroupSessionsByAttribute.toString(),
+                  SoldoutStatus: sessionData.SoldoutStatus,
+                  TypeCode: sessionData.TypeCode,
+                  InSeatDeliveryFee: sessionData.InSeatDeliveryFee,
                 },
                 create: {
-                  id: attr.ID,
-                  description: attr.Description,
-                  shortName: attr.ShortName,
-                  altDescription: attr.AltDescription,
-                  altShortName: attr.AltShortName,
-                  message: attr.Message,
-                  messageAlt: attr.MessageAlt,
-                  warningMessage: attr.WarningMessage,
-                  warningMessageAlt: attr.WarningMessageAlt,
-                  salesChannels: attr.SalesChannels,
-                  isUsedForConcepts: attr.IsUsedForConcepts,
-                  isUsedForSessionAdvertising: attr.IsUsedForSessionAdvertising,
-                  displayPriority: attr.DisplayPriority,
-                  isPromoted: attr.IsPromoted,
+                  ID: sessionData.ID,
+                  CinemaId: sessionData.CinemaId,
+                  cinema: sessionData.cinema,
+                  ScheduledFilmId: sessionData.ScheduledFilmId,
+                  SessionId: sessionData.SessionId,
+                  AreaCategoryCodes: sessionData.AreaCategoryCodes,
+                  MinimumTicketPriceInCents:
+                    sessionData.MinimumTicketPriceInCents,
+                  Showtime: sessionData.Showtime,
+                  IsAllocatedSeating: sessionData.IsAllocatedSeating.toString(),
+                  AllowChildAdmits: sessionData.AllowChildAdmits.toString(),
+                  SeatsAvailable: sessionData.SeatsAvailable,
+                  AllowComplimentaryTickets:
+                    sessionData.AllowComplimentaryTickets.toString(),
+                  EventId: sessionData.EventId,
+                  GlobalEventId: sessionData.GlobalEventId,
+                  PriceGroupCode: sessionData.PriceGroupCode,
+                  ScreenName: sessionData.ScreenName,
+                  ScreenNameAlt: sessionData.ScreenNameAlt,
+                  ScreenNumber: sessionData.ScreenNumber,
+                  CinemaOperatorCode: sessionData.CinemaOperatorCode,
+                  FormatCode: sessionData.FormatCode,
+                  FormatHOPK: sessionData.FormatHOPK,
+                  SalesChannels: sessionData.SalesChannels,
+                  Attributes: sessionData.Attributes,
+                  SessionAttributesNames: sessionData.SessionAttributesNames,
+                  ConceptAttributesNames: sessionData.ConceptAttributesNames,
+                  AllowTicketSales: sessionData.AllowTicketSales.toString(),
+                  HasDynamicallyPricedTicketsAvailable:
+                    sessionData.HasDynamicallyPricedTicketsAvailable.toString(),
+                  PlayThroughId: sessionData.PlayThroughId,
+                  SessionBusinessDate: sessionData.SessionBusinessDate,
+                  SessionDisplayPriority: sessionData.SessionDisplayPriority.toString(),
+                  GroupSessionsByAttribute:
+                    sessionData.GroupSessionsByAttribute.toString(),
+                  SoldoutStatus: sessionData.SoldoutStatus,
+                  TypeCode: sessionData.TypeCode,
+                  InSeatDeliveryFee: sessionData.InSeatDeliveryFee,
                 },
               });
-
-              await prisma.session.update({
-                where: { id: session.ID },
-                data: {
-                  attributes: {
-                    connect: { id: attr.ID },
-                  },
-                },
-              });
-            }
-
+            });
           } catch (error) {
-            console.error(`Error processing session ${session.ID}:`, error.message);
+            console.error(`Error processing Film ${sessionData.ID}:`, error);
           }
         })
       );
     }
 
-    console.log(`Session sync completed in ${(new Date() - startTime) / 1000} seconds`);
+    console.log(
+      `Session sync completed in ${(new Date() - startTime) / 1000} seconds`
+    );
   } catch (error) {
     console.error("Session sync failed:", error);
     throw error;
   }
 }
 
-
 router.get("/sync-sessions", async (req, res) => {
   try {
     await syncSession();
-    res
-      .status(200)
-      .json({ message: "Sessions sync completed successfully" });
+    res.status(200).json({ message: "Film sync completed successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Screen attributes sync failed: " + error.message });
+    res.status(500).json({ error: "Film sync failed: " + error.message });
   }
 });
 
 module.exports = router;
+

@@ -45,136 +45,140 @@ async function withRetry(operation, context = "") {
 async function syncFilms() {
   try {
     const startTime = new Date();
-    const films = await withRetry(
+    const film = await withRetry(
       () => api.get("Films").then((res) => res.data.value),
-      "fetchFilms"
+      "fetchfilms"
     );
+    const ticketPrice = 100;
 
-    for (let i = 0; i < films.length; i += CONFIG.batchSize) {
-      const batch = films.slice(i, i + CONFIG.batchSize);
+    for (let i = 0; i < film.length; i += CONFIG.batchSize) {
+      const batch = film.slice(i, i + CONFIG.batchSize);
 
       await Promise.all(
-        batch.map(async (film) => {
-          const filmAgeHours =
-            (new Date() - new Date(film.Showtime)) / (1000 * 60 * 60);
-          if (filmAgeHours > 1) {
-            try {
-              await prisma.film.delete({ where: { id: film.ID } });
-            } catch (error) {
-              console.error(
-                `Error deleting old film ${film.ID}:`,
-                error.message
-              );
-            }
-            return;
-          }
-
-          const processRelations = (translations) => ({
-            create: (translations || []).map((trans) => ({
-              languageTag: trans.LanguageTag,
-              text: trans.Text,
-            })),
-          });
-
-          const filmData = {
-            id: film.ID,
-            shortCode: film.ShortCode,
-            title: film.Title,
-            rating: film.Rating,
-            ratingDescription: film.RatingDescription
-              ? film.RatingDescription.slice(0, 100)
-              : null,
-            synopsis: film.Synopsis ? film.Synopsis.slice(0, 100) : null,
-            synopsisAlt: film.SynopsisAlt
-              ? film.SynopsisAlt.slice(0, 100)
-              : null,
-            shortSynopsis: film.ShortSynopsis
-              ? film.ShortSynopsis.slice(0, 100)
-              : null,
-            shortSynopsisAlt: film.ShortSynopsisAlt
-              ? film.ShortSynopsisAlt.slice(0, 100)
-              : null,
-            hoFilmCode: film.HOFilmCode,
-            corporateFilmId: film.CorporateFilmId,
-            runTime: film.RunTime,
-            openingDate: film.OpeningDate,
-            graphicUrl: film.GraphicUrl,
-            filmNameUrl: film.FilmNameUrl,
-            trailerUrl: film.TrailerUrl,
-            isComingSoon: film.IsComingSoon,
-            isScheduledAtCinema: film.IsScheduledAtCinema,
-            titleAlt: film.TitleAlt,
-            ratingAlt: film.RatingAlt,
-            ratingDescriptionAlt: film.RatingDescriptionAlt
-              ? film.RatingDescriptionAlt.slice(0, 100)
-              : null,
-            websiteUrl: film.WebsiteUrl,
-            genreId: film.GenreId,
-            genreId2: film.GenreId2,
-            genreId3: film.GenreId3,
-            ediCode: film.EDICode,
-            twitterTag: film.TwitterTag,
-            filmWebId: film.FilmWebId,
-            movieXchangeCode: film.MovieXchangeCode,
-            distributorName: film.DistributorName,
-            governmentCode: film.GovernmentCode,
-            synopsisTranslations: processRelations(film.SynopsisTranslations),
-            titleTranslations: processRelations(film.TitleTranslations),
-            shortSynopsisTranslations: processRelations(
-              film.ShortSynopsisTranslations
-            ),
-            ratingDescriptionTranslations: processRelations(
-              film.RatingDescriptionTranslations
-            ),
-            formatCodes: {
-              create: (film.FormatCodes || []).map((code) => ({ code })),
-            },
-            additionalUrls: {
-              create: (film.AdditionalUrls || []).map((url) => ({
-                sequence: url.Sequence,
-                description: url.Description,
-                url: url.Url,
-              })),
-            },
-          };
+        batch.map(async (filmData) => {
           try {
-            await prisma.film.upsert({
-              where: { id: film.ID },
-              update: {
-                ...filmData,
-                formatCodes: {
-                  deleteMany: {},
-                  create: filmData.formatCodes.create,
+            await prisma.$transaction(async (tx) => {
+              await tx.film.upsert({
+                where: { FilmID: filmData.ID },
+                update: {
+                  ShortCode: filmData.ShortCode,
+                  Title: filmData.Title,
+                  Rating: filmData.Rating,
+                  RatingDescription: filmData.RatingDescription
+                    ? filmData.RatingDescription.slice(0, 255)
+                    : "null",
+                  Synopsis: filmData.Synopsis
+                    ? filmData.Synopsis.slice(0, 255)
+                    : "null",
+                  SynopsisAlt: filmData.SynopsisAlt
+                    ? filmData.SynopsisAlt.slice(0, 255)
+                    : "null",
+                  ShortSynopsis: filmData.ShortSynopsis
+                    ? filmData.ShortSynopsis.slice(0, 255)
+                    : "null",
+                  HOFilmCode: filmData.HOFilmCode,
+                  CorporateFilmId: filmData.CorporateFilmId,
+                  RunTime: filmData.RunTime,
+                  OpeningDate: filmData.OpeningDate,
+                  GraphicUrl: filmData.GraphicUrl,
+                  FilmNameUrl: filmData.FilmNameUrl,
+                  TrailerUrl: filmData.TrailerUrl,
+                  IsComingSoon: filmData.IsComingSoon,
+                  IsScheduledAtCinema: filmData.IsScheduledAtCinema,
+                  TitleAlt: filmData.TitleAlt,
+                  RatingAlt: filmData.RatingAlt,
+                  RatingDescriptionAlt: filmData.RatingDescriptionAlt
+                    ? filmData.RatingDescriptionAlt.slice(0, 255)
+                    : "null",
+                  ShortSynopsisAlt: filmData.ShortSynopsisAlt
+                    ? filmData.ShortSynopsisAlt.slice(0, 255)
+                    : "null",
+                  WebsiteUrl: filmData.WebsiteUrl,
+                  GenreId: filmData.GenreId,
+                  GenreId2: filmData.GenreId2,
+                  GenreId3: filmData.GenreId3,
+                  EDICode: filmData.EDICode,
+                  TwitterTag: filmData.TwitterTag,
+                  FilmWebId: filmData.FilmWebId,
+                  MovieXchangeCode: filmData.MovieXchangeCode,
+                  DistributorName: filmData.DistributorName,
+                  GovernmentCode: filmData.GovernmentCode,
+                  SynopsisTranslations: filmData.SynopsisTranslations,
+                  TitleTranslations: filmData.TitleTranslations,
+                  ShortSynopsisTranslations: filmData.ShortSynopsisTranslations,
+                  RatingDescriptionTranslations:
+                    filmData.RatingDescriptionTranslations,
+                  AdditionalUrls: filmData.AdditionalUrls,
+                  FormatCodes: filmData.FormatCodes,
+                  CustomerRatingStatistics: filmData.CustomerRatingStatistics,
+                  CustomerRatingTrailerStatistics:
+                    filmData.CustomerRatingTrailerStatistics,
                 },
-                additionalUrls: {
-                  deleteMany: {},
-                  create: filmData.additionalUrls.create,
+                create: {
+                  FilmID: filmData.ID,
+                  ShortCode: filmData.ShortCode,
+                  Title: filmData.Title,
+                  Rating: filmData.Rating,
+                  RatingDescription: filmData.RatingDescription
+                    ? filmData.RatingDescription.slice(0, 255)
+                    : "null",
+                  Synopsis: filmData.Synopsis
+                    ? filmData.Synopsis.slice(0, 255)
+                    : "null",
+                  SynopsisAlt: filmData.SynopsisAlt
+                    ? filmData.SynopsisAlt.slice(0, 255)
+                    : "null",
+                  ShortSynopsis: filmData.ShortSynopsis
+                    ? filmData.ShortSynopsis.slice(0, 255)
+                    : "null",
+                  HOFilmCode: filmData.HOFilmCode,
+                  CorporateFilmId: filmData.CorporateFilmId,
+                  RunTime: filmData.RunTime,
+                  OpeningDate: filmData.OpeningDate,
+                  GraphicUrl: filmData.GraphicUrl,
+                  FilmNameUrl: filmData.FilmNameUrl,
+                  TrailerUrl: filmData.TrailerUrl,
+                  IsComingSoon: filmData.IsComingSoon,
+                  IsScheduledAtCinema: filmData.IsScheduledAtCinema,
+                  TitleAlt: filmData.TitleAlt,
+                  RatingAlt: filmData.RatingAlt,
+                  RatingDescriptionAlt: filmData.RatingDescriptionAlt
+                    ? filmData.RatingDescriptionAlt.slice(0, 255)
+                    : "null",
+                  ShortSynopsisAlt: filmData.ShortSynopsisAlt
+                    ? filmData.ShortSynopsisAlt.slice(0, 255)
+                    : "null",
+                  WebsiteUrl: filmData.WebsiteUrl,
+                  GenreId: filmData.GenreId,
+                  GenreId2: filmData.GenreId2,
+                  GenreId3: filmData.GenreId3,
+                  EDICode: filmData.EDICode,
+                  TwitterTag: filmData.TwitterTag,
+                  FilmWebId: filmData.FilmWebId,
+                  MovieXchangeCode: filmData.MovieXchangeCode,
+                  DistributorName: filmData.DistributorName,
+                  GovernmentCode: filmData.GovernmentCode,
+                  SynopsisTranslations: filmData.SynopsisTranslations,
+                  TitleTranslations: filmData.TitleTranslations,
+                  ShortSynopsisTranslations: filmData.ShortSynopsisTranslations,
+                  RatingDescriptionTranslations:
+                    filmData.RatingDescriptionTranslations,
+                  AdditionalUrls: filmData.AdditionalUrls,
+                  FormatCodes: filmData.FormatCodes,
+                  CustomerRatingStatistics: filmData.CustomerRatingStatistics,
+                  ticketPrice:ticketPrice,
+                  CustomerRatingTrailerStatistics:
+                    filmData.CustomerRatingTrailerStatistics,
                 },
-                synopsisTranslations: {
-                  deleteMany: {},
-                  create: filmData.synopsisTranslations.create,
-                },
-                titleTranslations: {
-                  deleteMany: {},
-                  create: filmData.titleTranslations.create,
-                },
-                shortSynopsisTranslations: {
-                  deleteMany: {},
-                  create: filmData.shortSynopsisTranslations.create,
-                },
-                ratingDescriptionTranslations: {
-                  deleteMany: {},
-                  create: filmData.ratingDescriptionTranslations.create,
-                },
-              },
-              create: filmData,
+              });
             });
           } catch (error) {
-            console.error(`Error processing film ${film.ID}:`, error.message);
+            console.error(`Error processing Film ${filmData.ID}:`, error);
           }
         })
       );
     }
+
     console.log(
       `Film sync completed in ${(new Date() - startTime) / 1000} seconds`
     );
@@ -184,18 +188,14 @@ async function syncFilms() {
   }
 }
 
-
 router.get("/sync-films", async (req, res) => {
   try {
     await syncFilms();
-    res
-      .status(200)
-      .json({ message: "Film attributes sync completed successfully" });
+    res.status(200).json({ message: "Film sync completed successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Film attributes sync failed: " + error.message });
+    res.status(500).json({ error: "Film sync failed: " + error.message });
   }
 });
 
 module.exports = router;
+

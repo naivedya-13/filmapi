@@ -1,10 +1,8 @@
-const dotenv = require("dotenv");
+require("dotenv").config();
 const axios = require("axios");
 const { PrismaClient } = require("@prisma/client");
-const express = require("express");
-
-dotenv.config();
 const prisma = new PrismaClient();
+const express = require("express");
 const router = express.Router();
 
 const CONFIG = {
@@ -44,109 +42,57 @@ async function withRetry(operation, context = "") {
   }
 }
 
-// async function syncScreen() {
-//   try {
-//     const startTime = new Date(); // Define startTime here
-
-//     const screenAttributes = await withRetry(
-//       () => api.get("ScreenAttributes").then((res) => res.data.value),
-//       "fetchScreen"
-//     );
-
-//     for (let i = 0; i < screenAttributes.length; i += CONFIG.batchSize) {
-//       const batch = screenAttributes.slice(i, i + CONFIG.batchSize);
-
-//       await Promise.all(
-//         batch.map(async (screenAttr) => {
-//           try {
-//             // Fixed comparison logic - now using screenAttr instead of undefined variables
-//             // Removed the condition as it was using undefined variables
-
-//             const screenData = {
-//               id: screenAttr.ID,
-//               cinemaId: screenAttr.CinemaId,
-//               screenNumber: screenAttr.ScreenNumber,
-//               shortName: screenAttr.ShortName,
-//               isConcept: screenAttr.IsConcept,
-//               description: screenAttr.Description,
-//               descriptionAlt: screenAttr.DescriptionAlt,
-//             };
-//             await prisma.screenAttribute.upsert({
-//               where: {
-//                 id: screenAttr.ID,
-//                 screenNumber: screenAttr.ScreenNumber,
-//               },
-//               update: screenData,
-//               create: screenData,
-//             });
-//           } catch (error) {
-//             console.error(
-//               `Error processing screen attribute ${screenAttr.ID}:`,
-//               error.message
-//             );
-//           }
-//         })
-//       );
-//     }
-
-//     console.log(
-//       `Screen sync completed in ${(new Date() - startTime) / 1000} seconds`
-//     );
-//   } catch (error) {
-//     console.error("Screen sync failed:", error);
-//     throw error;
-//   }
-// }
 async function syncScreen() {
   try {
     const startTime = new Date();
-
-    const screenAttributes = await withRetry(
+    const screenData = await withRetry(
       () => api.get("ScreenAttributes").then((res) => res.data.value),
-      "fetchScreen"
+      "fetchscreens"
     );
 
-    for (let i = 0; i < screenAttributes.length; i += CONFIG.batchSize) {
-      const batch = screenAttributes.slice(i, i + CONFIG.batchSize);
+    for (let i = 0; i < screenData.length; i += CONFIG.batchSize) {
+      const batch = screenData.slice(i, i + CONFIG.batchSize);
 
       await Promise.all(
-        batch.map(async (screenAttr) => {
+        batch.map(async (screen) => {
           try {
-            const screenData = {
-              id: screenAttr.ID,
-              cinemaId: screenAttr.CinemaId,
-              screenNumber: screenAttr.ScreenNumber,
-              shortName: screenAttr.ShortName,
-              isConcept: screenAttr.IsConcept,
-              description: screenAttr.Description,
-              descriptionAlt: screenAttr.DescriptionAlt,
-            };
-            const existingScreen = await prisma.screenAttribute.findFirst({
+            const existingScreen = await prisma.screen.findFirst({
               where: {
-                cinemaId: screenAttr.CinemaId,
-                screenNumber: screenAttr.ScreenNumber,
+                CinemaId: screen.CinemaId,
+                ScreenNumber: screen.ScreenNumber,
               },
             });
-
             if (existingScreen) {
-              // Update existing record
-              await prisma.screenAttribute.update({
+              await prisma.screen.update({
                 where: {
-                  mainID: existingScreen.mainID
+                  ScreenID: existingScreen.ScreenID,
                 },
-                data: screenData
+                data: {
+                  AttributeID: screen.AttributeID,
+                  CinemaId: screen.CinemaId,
+                  ScreenNumber: screen.ScreenNumber,
+                  ShortName: screen.ShortName,
+                  IsConcept: screen.IsConcept.toString(),
+                  Description: screen.Description,
+                  DescriptionAlt: screen.DescriptionAlt,
+                },
               });
             } else {
-              // Create new record
-              await prisma.screenAttribute.create({
-                data: screenData
+              await prisma.screen.create({
+                data: {
+                  ScreenID: screen.ID,
+                  AttributeID: screen.AttributeID,
+                  CinemaId: screen.CinemaId,
+                  ScreenNumber: screen.ScreenNumber,
+                  ShortName: screen.ShortName,
+                  IsConcept: screen.IsConcept.toString(),
+                  Description: screen.Description,
+                  DescriptionAlt: screen.DescriptionAlt,
+                },
               });
             }
           } catch (error) {
-            console.error(
-              `Error processing screen attribute ${screenAttr.ID}:`,
-              error.message
-            );
+            console.error(`Error processing Screen ${screen.ID}:`, error);
           }
         })
       );
@@ -160,16 +106,13 @@ async function syncScreen() {
     throw error;
   }
 }
+
 router.get("/sync-screens", async (req, res) => {
   try {
     await syncScreen();
-    res
-      .status(200)
-      .json({ message: "Screen attributes sync completed successfully" });
+    res.status(200).json({ message: "Screen sync completed successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Screen attributes sync failed: " + error.message });
+    res.status(500).json({ error: "Screen sync failed: " + error.message });
   }
 });
 

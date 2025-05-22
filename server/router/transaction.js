@@ -24,60 +24,13 @@ const fetchPaymentMethod = async (paymentId) => {
   }
 };
 
-// router.post("/transaction", async (req, res) => {
-//   const { bookingId, amount, transactionId, status, razorpay_payment_id } =
-//     req.body;
-
-//   const paymentMethod = fetchPaymentMethod(razorpay_payment_id);
-
-//   const books = await prisma.transaction.findFirst({
-//     where: {
-//       bookingId: bookingId,
-//     },
-//   });
-//   if (books) {
-//     await prisma.transaction.update({
-//       where: { bookingId: bookingId },
-//       data: {
-//         amount: amount,
-//         transactionId: transactionId,
-//         paymentMethod: paymentMethod,
-//         status: status,
-//       },
-//     });
-//   } else {
-//     await prisma.transaction.create({
-//       bookingId: bookingId,
-//       amount: amount,
-//       transactionId: transactionId,
-//       paymentMethod: paymentMethod,
-//       status: status,
-//     });
-//   }
-// });
 router.post("/transaction", async (req, res) => {
   try {
     const { bookingId, amount, transactionId, status, razorpay_payment_id } = req.body;
 
     const paymentMethod = await fetchPaymentMethod(razorpay_payment_id);
 
-    const existingTransaction = await prisma.transaction.findFirst({
-      where: {
-        bookingId: bookingId,
-      },
-    });
-
-    if (existingTransaction) {
-      await prisma.transaction.update({
-        where: { bookingId: bookingId },
-        data: {
-          amount: amount,
-          transactionId: transactionId,
-          paymentMethod: paymentMethod,
-          status: status,
-        },
-      });
-    } else {
+   
       await prisma.transaction.create({
         data: {
           bookingId: bookingId,
@@ -87,7 +40,6 @@ router.post("/transaction", async (req, res) => {
           status: status,
         },
       });
-    }
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("Transaction error:", error);
