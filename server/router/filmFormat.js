@@ -1,5 +1,6 @@
 const axios = require("axios");
 const {PrismaClient} = require('@prisma/client');
+const router = require("./Film");
 const prisma = new PrismaClient();
 
 const url = "https://uatvista.novocinemas.com/WSVistaWebClient/film-formats";
@@ -80,9 +81,9 @@ const app = async (req, res) => {
   }
 };
 
-// If running as standalone script
-if (require.main === module) {
-  app();
-}
+router.get('/filmformat',async(req,res)=>{
+  await app()
+  res.send('OK')
+})
 
-module.exports = app;
+module.exports= router;

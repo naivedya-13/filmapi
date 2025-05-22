@@ -10,6 +10,8 @@ const bookingRoute = require('./router/booking');
 const payment = require('./router/payment');
 const transaction = require('./router/transaction')
 const seatArrangement = require('./router/seatArrangement')
+const findscreen = require('./router/findScreen')
+const filFormat = require('./router/filmFormat')
 const cors = require('cors');
 
 const app = express();
@@ -23,6 +25,7 @@ setInterval(async () => {
     await axios.get('http://localhost:3000/sync-films');
     await axios.get('http://localhost:3000/sync-screens');
     await axios.get('http://localhost:3000/sync-sessions');
+    await axios.get('http://localhost:3000/filmformat');
     console.log('Routes called at', new Date().toLocaleTimeString());
   } catch (error) {
     console.error('Error calling routes:', error.message);
@@ -38,6 +41,8 @@ app.use('/',bookingRoute);
 app.use('/',payment)
 app.use('/',transaction)
 app.use('/',seatArrangement)
+app.use('/',findscreen)
+app.use('/',filFormat)
 app.get('/', (req, res) => {
   res.send('Welcome to the Cinema Booking System API');
 });

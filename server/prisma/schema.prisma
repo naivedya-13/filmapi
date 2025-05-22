@@ -128,7 +128,8 @@ model Session {
   ScreenNameAlt                        String?
   ScreenNumber                         Int?
   CinemaOperatorCode                   String?
-  FormatCode                           String?
+  FormatCode                           String
+   filFormat                           filFormat @relation(fields:[FormatCode], references:[code])
   FormatHOPK                           String?
   SalesChannels                        String?
   Attributes                           Json?
@@ -166,4 +167,5 @@ model filFormat {
   shortName             String?
   nameTranslations      Json?
   shortNameTranslations Json?
+  Session               Session[]
 }

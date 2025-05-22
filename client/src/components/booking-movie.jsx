@@ -108,6 +108,7 @@ function BookingMovie() {
       if (!response.ok) {
         throw new Error(data.message || "Booking failed");
       }
+      
       const paramsObject = Object.fromEntries(params.entries());
 
       setBookingSuccess(true);
@@ -159,11 +160,10 @@ function BookingMovie() {
       <div className="mb-4 flex space-x-2 overflow-x-auto pb-2">
         <button
           onClick={() => setSelectedDate("all")}
-          className={`px-4 py-2 rounded-lg whitespace-nowrap ${
-            selectedDate === "all"
+          className={`px-4 py-2 rounded-lg whitespace-nowrap ${selectedDate === "all"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 hover:bg-gray-300"
-          }`}
+            }`}
         >
           All Dates
         </button>
@@ -171,11 +171,10 @@ function BookingMovie() {
           <button
             key={option.value}
             onClick={() => setSelectedDate(option.value)}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap ${
-              selectedDate === option.value
+            className={`px-4 py-2 rounded-lg whitespace-nowrap ${selectedDate === option.value
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200 hover:bg-gray-300"
-            }`}
+              }`}
           >
             {option.label}
           </button>
@@ -199,11 +198,10 @@ function BookingMovie() {
                 ([filmId, { filmDetails, sessions }]) => (
                   <li
                     key={filmId}
-                    className={`cursor-pointer p-3 rounded-lg transition-all ${
-                      selectedFilmId === filmId
+                    className={`cursor-pointer p-3 rounded-lg transition-all ${selectedFilmId === filmId
                         ? "bg-blue-50 border-l-4 border-blue-500 shadow-sm"
                         : "hover:bg-gray-50"
-                    }`}
+                      }`}
                     onClick={() => handleFilmSelect(filmId)}
                   >
                     <div className="flex items-start">
@@ -254,11 +252,10 @@ function BookingMovie() {
                     <div
                       key={session.SessionId}
                       onClick={() => handleSessionSelect(session)}
-                      className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                        selectedSession?.SessionId === session.SessionId
+                      className={`p-3 border rounded-lg cursor-pointer transition-all ${selectedSession?.SessionId === session.SessionId
                           ? "border-blue-400 bg-blue-50 shadow-md"
                           : "hover:border-gray-300 hover:shadow-sm"
-                      }`}
+                        }`}
                     >
                       <div className="font-medium text-gray-900">
                         {formatDate(session.Showtime)}
@@ -268,7 +265,7 @@ function BookingMovie() {
                         <span>{session.SeatsAvailable} seats left</span>
                       </div>
                       <div className="mt-2 text-sm font-medium">
-                        ${session.film.ticketPrice}
+                        {session.filFormat.name}
                       </div>
                     </div>
                   ))}

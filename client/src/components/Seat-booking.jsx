@@ -1,23 +1,29 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function SeatBooking() {
   const location = useLocation();
   const navigate = useNavigate();
   const { seatData, params } = location.state || {};
+  const sessionId = params?.sessionId;
+  const cinemaId = params?.cinemaId;
+  
   if (!location.state) {
     navigate("/");
     return null;
   }
-
+  
   const areas = seatData?.SeatLayoutData?.Areas || [];
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [screenNames, setScreenNames] = useState({});
+  const [prices, setPrices] = useState({}); // Changed to store multiple prices
+
   const createSeatId = (areaIdx, rowIdx, seatId) => {
     return `area${areaIdx}-row${rowIdx}-seat${seatId}`;
   };
 
-  const handleSeatClick = (areaIdx, rowIdx, seat, rowName,area) => {
+  const handleSeatClick = (areaIdx, rowIdx, seat, rowName, area) => {
     const uniqueSeatId = createSeatId(areaIdx, rowIdx, seat.Id);
 
     setSelectedSeats((prev) => {
@@ -36,16 +42,79 @@ function SeatBooking() {
             areaIdx,
             rowIdx,
             originalSeatId: seat.Id,
-            area
+            area,
+            price: prices[area] || 0 // Add price to seat data
           },
         ];
       }
     });
   };
 
+  const handleScreen = async (area) => {
+    const response = await fetch(
+      `http://localhost:3000/findscreen?area=${area}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    const data = await response.json();
+    console.log(data);
+    return data.name;
+  };
+
+  useEffect(() => {
+    const loadScreenNames = async () => {
+      const response = await fetch(
+        `http://localhost:3000/ticket?sessionId=${sessionId}&cinemaId=${cinemaId}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      
+      const data = await response.json();
+      const names = {};
+      const areaPrice = {}; // Object to store prices for each area
+      
+      for (const area of areas) {
+        try {
+          const screenName = await handleScreen(area.AreaCategoryCode);
+          
+          // Find price for this specific area category
+          const ticketData = data.Tickets.find(
+            (areaMap) => areaMap.AreaCategoryCode === area.AreaCategoryCode && areaMap.TicketCode === "DF"
+          );
+          
+          if (ticketData) {
+            areaPrice[area.AreaCategoryCode] = ticketData.PriceInCents;
+          }
+          
+          names[area.AreaCategoryCode] = screenName;
+        } catch (error) {
+          console.error(`Error loading screen name for ${area.AreaCategoryCode}:`, error);
+          names[area.AreaCategoryCode] = '';
+        }
+      }
+      
+      setScreenNames(names);
+      setPrices(areaPrice); // Set all prices at once
+    };
+
+    if (areas.length > 0) {
+      loadScreenNames();
+    }
+  }, [areas, sessionId, cinemaId]);
+
   const isSeatSelected = (areaIdx, rowIdx, seatId) => {
     const uniqueSeatId = createSeatId(areaIdx, rowIdx, seatId);
     return selectedSeats.some((s) => s.uniqueId === uniqueSeatId);
+  };
+
+  // Calculate total amount based on actual seat prices
+  const calculateTotalAmount = () => {
+    return selectedSeats.reduce((total, seat) => total + (seat.price || 0), 0);
   };
 
   const proceedToPayment = () => {
@@ -60,7 +129,7 @@ function SeatBooking() {
         state: {
           seats: selectedSeats,
           showDetails: params,
-          totalAmount: selectedSeats.length * 100,
+          totalAmount: calculateTotalAmount(),
         },
       });
       setIsProcessing(false);
@@ -88,11 +157,15 @@ function SeatBooking() {
           </div>
         </div>
       </div>
+      
       <div className="bg-gray-50 rounded-lg p-4 md:p-6 mb-8 shadow-sm">
         {areas.map((area, areaIdx) => (
           <div key={`area-${areaIdx}`} className="mb-8 last:mb-0">
             <h2 className="text-center text-gray-800 mb-4 text-lg md:text-xl font-semibold">
-              {area.Description}
+              {area.Description} {screenNames[area.AreaCategoryCode] || ''} 
+              {prices[area.AreaCategoryCode] && (
+                <span className="ml-2 text-green-600">${prices[area.AreaCategoryCode]}</span>
+              )}
             </h2>
             <div className="text-center italic text-gray-500 mb-6 relative">
               <div className="h-0.5 bg-gradient-to-r from-transparent via-gray-400 to-transparent mb-2"></div>
@@ -117,7 +190,6 @@ function SeatBooking() {
                             areaIdx,
                             rowIdx,
                             seat.Id
-                            
                           );
 
                           return (
@@ -164,6 +236,7 @@ function SeatBooking() {
           </div>
         ))}
       </div>
+      
       <div className="bg-gray-50 rounded-lg p-4 md:p-6 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 min-w-0">
@@ -172,30 +245,33 @@ function SeatBooking() {
             </h3>
 
             {selectedSeats.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-2">
                 {selectedSeats.map((seat, index) => (
-                  <span
-                    key={seat.uniqueId}
-                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm font-medium"
-                  >
-                    {seat.row}-{seat.name || seat.id}
-                  </span>
+                  <div key={seat.uniqueId} className="flex justify-between items-center bg-blue-100 text-blue-800 px-3 py-2 rounded">
+                    <span className="font-medium">
+                      {seat.row}-{seat.name || seat.id}
+                    </span>
+                    <span className="font-bold">
+                      {(seat.price || 0) }
+                    </span>
+                  </div>
                 ))}
               </div>
             ) : (
               <p className="text-gray-500 italic">No seats selected yet</p>
             )}
           </div>
+          
           <div className="min-w-64 lg:border-l lg:border-gray-200 lg:pl-8 border-t lg:border-t-0 border-gray-200 pt-8 lg:pt-0">
             <div className="space-y-2 mb-4">
               <div className="flex justify-between text-sm md:text-base">
                 <span>Seats ({selectedSeats.length})</span>
-                <span>₹{selectedSeats.length * 100}</span>
+                <span>{calculateTotalAmount() }</span>
               </div>
 
               <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
                 <span>Total Amount</span>
-                <span>₹{selectedSeats.length * 100}</span>
+                <span>{calculateTotalAmount()}</span>
               </div>
             </div>
 
