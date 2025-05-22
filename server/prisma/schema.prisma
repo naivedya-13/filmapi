@@ -9,14 +9,14 @@ datasource db {
 
 model Film {
   ID                              String    @id @default(uuid())
-  FilmID                          String   @unique
+  FilmID                          String    @unique
   ShortCode                       String?
   Title                           String?
   Rating                          String?
-  RatingDescription               String? @db.VarChar(255)
-  Synopsis                        String? @db.VarChar(255)
-  SynopsisAlt                     String? @db.VarChar(255)
-  ShortSynopsis                   String? @db.VarChar(255)
+  RatingDescription               String?   @db.VarChar(255)
+  Synopsis                        String?   @db.VarChar(255)
+  SynopsisAlt                     String?   @db.VarChar(255)
+  ShortSynopsis                   String?   @db.VarChar(255)
   HOFilmCode                      String?
   CorporateFilmId                 String?
   RunTime                         Int?
@@ -28,8 +28,8 @@ model Film {
   IsScheduledAtCinema             Boolean
   TitleAlt                        String?
   RatingAlt                       String?
-  RatingDescriptionAlt            String? @db.VarChar(255)
-  ShortSynopsisAlt                String? @db.VarChar(255)
+  RatingDescriptionAlt            String?   @db.VarChar(255)
+  ShortSynopsisAlt                String?   @db.VarChar(255)
   WebsiteUrl                      String?
   GenreId                         String?
   GenreId2                        String?
@@ -48,7 +48,7 @@ model Film {
   FormatCodes                     Json?
   CustomerRatingStatistics        Json?
   CustomerRatingTrailerStatistics Json?
-  ticketPrice                     Int 
+  ticketPrice                     Int
   booking                         Booking[]
   Session                         Session[]
 }
@@ -97,7 +97,7 @@ model Cinema {
 
 model Screen {
   ID             String  @id @default(uuid())
-  ScreenID       String @unique
+  ScreenID       String  @unique
   AttributeID    String?
   CinemaId       String?
   ScreenNumber   Int?
@@ -112,7 +112,7 @@ model Session {
   CinemaId                             String
   cinema                               Cinema  @relation(fields: [CinemaId], references: [CinemaID])
   ScheduledFilmId                      String
-  film                                 Film @relation(fields:[ScheduledFilmId], references:[FilmID])
+  film                                 Film    @relation(fields: [ScheduledFilmId], references: [FilmID])
   SessionId                            String?
   AreaCategoryCodes                    Json?
   MinimumTicketPriceInCents            Int?
@@ -158,4 +158,12 @@ model Booking {
   Transactionstatus String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model filFormat {
+  code                  String  @id
+  name                  String
+  shortName             String?
+  nameTranslations      Json?
+  shortNameTranslations Json?
 }

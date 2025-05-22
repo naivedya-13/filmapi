@@ -17,7 +17,7 @@ function SeatBooking() {
     return `area${areaIdx}-row${rowIdx}-seat${seatId}`;
   };
 
-  const handleSeatClick = (areaIdx, rowIdx, seat, rowName) => {
+  const handleSeatClick = (areaIdx, rowIdx, seat, rowName,area) => {
     const uniqueSeatId = createSeatId(areaIdx, rowIdx, seat.Id);
 
     setSelectedSeats((prev) => {
@@ -36,6 +36,7 @@ function SeatBooking() {
             areaIdx,
             rowIdx,
             originalSeatId: seat.Id,
+            area
           },
         ];
       }
@@ -116,6 +117,7 @@ function SeatBooking() {
                             areaIdx,
                             rowIdx,
                             seat.Id
+                            
                           );
 
                           return (
@@ -127,7 +129,8 @@ function SeatBooking() {
                                   areaIdx,
                                   rowIdx,
                                   seat,
-                                  row.PhysicalName
+                                  row.PhysicalName,
+                                  area.AreaCategoryCode
                                 )
                               }
                               disabled={!isAvailable}
