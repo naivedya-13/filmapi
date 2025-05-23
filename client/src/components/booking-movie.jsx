@@ -94,6 +94,7 @@ function BookingMovie() {
         sessionId: selectedSession.SessionId,
         cinemaId: selectedSession.CinemaId,
         ScreenNumber: selectedSession.ScreenNumber,
+        showTime: selectedSession.sessionDate
       });
 
       const response = await fetch(

@@ -213,7 +213,8 @@ const Quickbook = () => {
       const params = new URLSearchParams({
         sessionId: sessionIdd,
         cinemaId: selectedCinema,
-        ScreenNumber: screenNumber
+        ScreenNumber: screenNumber,
+        showTime:selectedTime
       });
 
       const response = await fetch(
