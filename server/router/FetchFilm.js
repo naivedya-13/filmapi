@@ -68,7 +68,7 @@ router.get("/fetch-films", async (req, res) => {
       },
       include: {
         film: true,
-        filFormat:true
+        filFormat:true,
       },
     });
     res.setHeader('Content-Type', 'application/json');
@@ -76,6 +76,25 @@ router.get("/fetch-films", async (req, res) => {
     res.status(200).json(films);
   } catch (error) {
     console.error("Error fetching films with sessions:", error);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    await prisma.$disconnect(); 
+  }
+});
+
+router.get("/fetch-cinemas", async (req, res) => {
+  try {
+    const cinema = await prisma.cinema.findMany({
+      select:{
+        CinemaID:true,
+        Name:true
+      }
+    });
+    res.setHeader('Content-Type', 'application/json');
+    console.log(cinema)
+    res.status(200).json(cinema);
+  } catch (error) {
+    console.error("Error fetching cinema with sessions:", error);
     res.status(500).json({ error: "Internal server error" });
   } finally {
     await prisma.$disconnect(); 

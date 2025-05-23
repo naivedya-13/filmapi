@@ -124,7 +124,7 @@ model Session {
   EventId                              String?
   GlobalEventId                        String?
   PriceGroupCode                       String?
-  ScreenName                           String?
+  ScreenName                           String
   ScreenNameAlt                        String?
   ScreenNumber                         Int?
   CinemaOperatorCode                   String?

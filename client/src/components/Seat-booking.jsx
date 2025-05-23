@@ -17,7 +17,7 @@ function SeatBooking() {
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [screenNames, setScreenNames] = useState({});
-  const [prices, setPrices] = useState({}); // Changed to store multiple prices
+  const [prices, setPrices] = useState({}); 
 
   const createSeatId = (areaIdx, rowIdx, seatId) => {
     return `area${areaIdx}-row${rowIdx}-seat${seatId}`;
@@ -43,7 +43,7 @@ function SeatBooking() {
             rowIdx,
             originalSeatId: seat.Id,
             area,
-            price: prices[area] || 0 // Add price to seat data
+            price: prices[area] || 0 
           },
         ];
       }
@@ -105,7 +105,7 @@ function SeatBooking() {
     if (areas.length > 0) {
       loadScreenNames();
     }
-  }, [areas, sessionId, cinemaId]);
+  }, [areas, sessionId, cinemaId],[]);
 
   const isSeatSelected = (areaIdx, rowIdx, seatId) => {
     const uniqueSeatId = createSeatId(areaIdx, rowIdx, seatId);

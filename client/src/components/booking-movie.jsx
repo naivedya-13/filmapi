@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Calendar, Clock, Film, Tag } from "lucide-react";
 import { format, parseISO, isAfter, addDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import Quickbook from "./quickbook";
 
 function BookingMovie() {
   const [films, setFilms] = useState([]);
@@ -150,6 +151,7 @@ function BookingMovie() {
           Book your favorite movies with ease
         </p>
       </header>
+      {<Quickbook/>}
 
       {bookingSuccess && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">

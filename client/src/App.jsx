@@ -4,6 +4,7 @@ import ScreenList from "./components/ScreenList";
 import ShowtimeFilter from "./components/session";
 import BookingMovie from "./components/booking-movie";
 import SeatBooking from "./components/Seat-booking";
+import Quickbook from "./components/quickbook";
 function App() {
   return(
     <Router>
@@ -14,6 +15,7 @@ function App() {
         <Route path="/session" element={<ShowtimeFilter/>}/>
         <Route path="/movie" element={<BookingMovie/>}/>
         <Route path="/seat-booking" element={<SeatBooking/>}/>
+        <Route path="/quickbook" element={<Quickbook/>}/>
         <Route path="*" element={<h1>404 Not Found</h1>} />
       </Routes>
     </Router>

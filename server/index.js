@@ -12,6 +12,7 @@ const transaction = require('./router/transaction')
 const seatArrangement = require('./router/seatArrangement')
 const findscreen = require('./router/findScreen')
 const filFormat = require('./router/filmFormat')
+const quickbook = require('./router/quickbook')
 const cors = require('cors');
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/',transaction)
 app.use('/',seatArrangement)
 app.use('/',findscreen)
 app.use('/',filFormat)
+app.use('/',quickbook)
 app.get('/', (req, res) => {
   res.send('Welcome to the Cinema Booking System API');
 });
