@@ -16,8 +16,6 @@ router.get("/seatArrangement", async (req, res) => {
         "Content-Type": "application/json",
       },
     });
-
-    // console.log("API Response:", response.data);
     res.status(200).json(response.data);
   } catch (error) {
     console.error("API Error:", error.response?.data || error.message);
@@ -28,7 +26,6 @@ router.get("/seatArrangement", async (req, res) => {
 });
 
 router.get("/ticket", async (req, res) => {
-  console.log("ticket:", req.query);
   const { sessionId, cinemaId } = req.query;
 
   try {
@@ -40,8 +37,6 @@ router.get("/ticket", async (req, res) => {
         "Content-Type": "application/json",
       },
     });
-
-    console.log("API Response:", response.data);
     res.status(200).json(response.data);
   } catch (error) {
     console.error("API Error:", error.response?.data || error.message);

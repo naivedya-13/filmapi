@@ -18,8 +18,6 @@ router.get("/findscreen", async (req, res) => {
             name:true
         }
     })
-
-    console.log("Response:", response);
     res.status(200).json(response);
   } catch (error) {
     console.error("API Error:", error.response?.data || error.message);

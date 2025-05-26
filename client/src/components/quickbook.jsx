@@ -216,6 +216,7 @@ const Quickbook = () => {
         ScreenNumber: screenNumber,
         showTime:selectedTime
       });
+      console.log(selectedTime)
 
       const response = await fetch(
         `http://localhost:3000/seatArrangement?${params}`,

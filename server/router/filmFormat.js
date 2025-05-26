@@ -19,7 +19,6 @@ const app = async (req, res) => {
       const filmFormats = response.data.filmFormats;
       
       for (const format of filmFormats) {
-        console.log("Processing format:", format);
         try {
           await prisma.filFormat.upsert({
             where: { code: format.code },
@@ -37,13 +36,10 @@ const app = async (req, res) => {
               shortNameTranslations: format.shortNameTranslations || []
             }
           });
-          console.log(`Successfully processed format: ${format.name}`);
         } catch (dbError) {
           console.error(`Error saving format ${format.code}:`, dbError);
         }
       }
-      
-      // If this is an Express route handler, send response
       if (res) {
         res.json({
           success: true,

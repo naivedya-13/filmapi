@@ -40,38 +40,26 @@ const razorpay = new Razorpay({
 });
 router.post("/createpayment", async (req, res) => {
   try {
-    const { filmId, customerName, customerEmail, seats, showTime, seatLength } =
+    const { SessionId, customerName, customerEmail, seats, showTime, showDetails,totalAmount } =
       req.body;
-
-    const film = await prisma.film.findUnique({
-      where: { id: filmId },
-      select: { ticketPrice: true },
-    });
-
-    if (!film) {
-      return res.status(404).json({ error: "Film not found" });
-    }
-
-    const total = parseInt(seatLength) * film.ticketPrice;
-    const amount = Math.round(parseFloat(total) * 100);
 
     const booking = await prisma.booking.create({
       data: {
-        filmId,
+        SessionId,
         customerName,
         customerEmail,
-        seats: JSON.stringify(seats),
+        seats,
         showTime,
-        totalAmount: total,
-        status: "PENDING",
+        totalAmount,
+        Transactionstatus: "PENDING",
       },
     });
 
-    const bookingId = booking.id;
-    console.log("✅ Created booking with ID:", bookingId);
+    const bookingId = booking.SessionId;
+    console.log("Created booking with ID:", bookingId);
 
     const options = {
-      amount: amount,
+      amount: totalAmount,
       currency: "INR",
       receipt: `bk_${bookingId.substring(0, 30)}`,
       notes: {
@@ -97,6 +85,97 @@ router.post("/createpayment", async (req, res) => {
   }
 });
 
+// router.post("/webhook", async (req, res) => {
+//   const signature = req.headers["x-razorpay-signature"];
+
+//   const isValid = isSignatureValid(
+//     req.body,
+//     signature,
+//     process.env.WEBHOOK_SECRET
+//   );
+//   if (!isValid) {
+//     console.log("Invalid webhook signature");
+//     return res.status(400).send("Invalid signature");
+//   }
+
+//   // Valid signature
+//   const payload = req.body;
+//   console.log("Valid webhook received:", payload.event);
+//   if (payload.event === "payment.captured") {
+//     const payment = payload.payload.payment.entity;
+//     const bookingId = payment.notes.bookingId;
+//     const amount = payment.amount / 100;
+//     const transactionId = payment.order_id;
+//     const status = "PENDING";
+//     const razorpay_payment_id = payment.id;
+//     console.log(payment, bookingId);
+//     await fetch("http://localhost:3000/transaction", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         bookingId,
+//         status,
+//       }),
+//     });
+//     res.status(200).send("OK");
+//   }
+//   if (payload.event === "order.paid") {
+//     const payment = payload.payload.payment.entity;
+//     const bookingId = payment.notes.bookingId;
+//     const amount = payment.amount / 100;
+//     const transactionId = payment.order_id;
+//     let status = "COMPLETED";
+//     const razorpay_payment_id = payment.id;
+//     console.log(payment, bookingId);
+//     await fetch("http://localhost:3000/transaction", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         bookingId,
+//         status,
+//       }),
+//     });
+//     const data = await refundPayment(razorpay_payment_id,payment.amount)
+//     if(data){
+//       const status = "REFUNDED"
+//       const transactionId=data.id;
+//       await fetch("http://localhost:3000/transaction", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         bookingId,
+//         status,
+//       })});
+//     }
+//   res.status(200);
+//   }
+
+//   if (payload.event === "payment.failed") {
+//     const payment = payload.payload.payment.entity;
+//     const bookingId = payment.notes.bookingId;
+//     const amount = payment.amount / 100;
+//     const status = "FAILED";
+//     const razorpay_payment_id = payment.id;
+//     console.log(payment, bookingId);
+//     await fetch("http://localhost:3000/transaction", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         bookingId,
+//         status,
+//       }),
+//     });
+//   res.status(200).send("OK");
+//   }
+// });
 router.post("/webhook", async (req, res) => {
   const signature = req.headers["x-razorpay-signature"];
 
@@ -106,13 +185,14 @@ router.post("/webhook", async (req, res) => {
     process.env.WEBHOOK_SECRET
   );
   if (!isValid) {
-    console.log("⚠️ Invalid webhook signature");
+    console.log("Invalid webhook signature");
     return res.status(400).send("Invalid signature");
   }
 
   // Valid signature
   const payload = req.body;
-  // console.log("✅ Valid webhook received:", payload.event);
+  console.log("Valid webhook received:", payload.event);
+  
   if (payload.event === "payment.captured") {
     const payment = payload.payload.payment.entity;
     const bookingId = payment.notes.bookingId;
@@ -121,6 +201,7 @@ router.post("/webhook", async (req, res) => {
     const status = "PENDING";
     const razorpay_payment_id = payment.id;
     console.log(payment, bookingId);
+    
     await fetch("http://localhost:3000/transaction", {
       method: "POST",
       headers: {
@@ -128,14 +209,12 @@ router.post("/webhook", async (req, res) => {
       },
       body: JSON.stringify({
         bookingId,
-        amount,
-        transactionId,
         status,
-        razorpay_payment_id,
       }),
     });
     res.status(200).send("OK");
   }
+  
   if (payload.event === "order.paid") {
     const payment = payload.payload.payment.entity;
     const bookingId = payment.notes.bookingId;
@@ -144,6 +223,8 @@ router.post("/webhook", async (req, res) => {
     let status = "COMPLETED";
     const razorpay_payment_id = payment.id;
     console.log(payment, bookingId);
+    
+    // Update status to COMPLETED first
     await fetch("http://localhost:3000/transaction", {
       method: "POST",
       headers: {
@@ -151,40 +232,42 @@ router.post("/webhook", async (req, res) => {
       },
       body: JSON.stringify({
         bookingId,
-        amount,
-        transactionId,
         status,
-        razorpay_payment_id,
       }),
     });
-    const data = await refundPayment(razorpay_payment_id,payment.amount)
-    if(data){
-      const status = "REFUNDED"
-      const transactionId=data.id;
-      await fetch("http://localhost:3000/transaction", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        bookingId,
-        amount,
-        transactionId,
-        status,
-        razorpay_payment_id,
-      })});
+    
+    // Then process refund
+    try {
+      const data = await refundPayment(razorpay_payment_id, payment.amount);
+      if (data) {
+        const refundStatus = "REFUNDED";
+        const transactionId = data.id;
+        await fetch("http://localhost:3000/transaction", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            bookingId,
+            status: refundStatus,
+          })
+        });
+      }
+    } catch (error) {
+      console.error("Refund failed:", error);
     }
-  res.status(200);
+    
+    res.status(200).send("OK");
   }
 
   if (payload.event === "payment.failed") {
     const payment = payload.payload.payment.entity;
     const bookingId = payment.notes.bookingId;
     const amount = payment.amount / 100;
-    let transactionId = payment.order_id;
     const status = "FAILED";
     const razorpay_payment_id = payment.id;
     console.log(payment, bookingId);
+    
     await fetch("http://localhost:3000/transaction", {
       method: "POST",
       headers: {
@@ -192,13 +275,10 @@ router.post("/webhook", async (req, res) => {
       },
       body: JSON.stringify({
         bookingId,
-        amount,
-        transactionId,
         status,
-        razorpay_payment_id,
       }),
     });
-  res.status(200).send("OK");
+    res.status(200).send("OK");
   }
 });
 

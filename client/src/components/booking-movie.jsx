@@ -94,8 +94,9 @@ function BookingMovie() {
         sessionId: selectedSession.SessionId,
         cinemaId: selectedSession.CinemaId,
         ScreenNumber: selectedSession.ScreenNumber,
-        showTime: selectedSession.sessionDate
+        showTime: selectedSession.Showtime
       });
+      console.log(selectedSession)
 
       const response = await fetch(
         `http://localhost:3000/seatArrangement?${params}`,
