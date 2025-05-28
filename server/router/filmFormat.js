@@ -14,7 +14,7 @@ const app = async (req, res) => {
       }
     });
     
-    console.log("Full response:", response.data);
+    // console.log("Full response:", response.data);
     if (response.data && response.data.filmFormats) {
       const filmFormats = response.data.filmFormats;
       

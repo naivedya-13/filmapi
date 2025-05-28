@@ -72,7 +72,7 @@ router.get("/fetch-films", async (req, res) => {
       },
     });
     res.setHeader('Content-Type', 'application/json');
-    console.log(films)
+    // console.log(films)
     res.status(200).json(films);
   } catch (error) {
     console.error("Error fetching films with sessions:", error);
@@ -91,7 +91,7 @@ router.get("/fetch-cinemas", async (req, res) => {
       }
     });
     res.setHeader('Content-Type', 'application/json');
-    console.log(cinema)
+    // console.log(cinema)
     res.status(200).json(cinema);
   } catch (error) {
     console.error("Error fetching cinema with sessions:", error);

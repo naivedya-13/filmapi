@@ -85,97 +85,6 @@ router.post("/createpayment", async (req, res) => {
   }
 });
 
-// router.post("/webhook", async (req, res) => {
-//   const signature = req.headers["x-razorpay-signature"];
-
-//   const isValid = isSignatureValid(
-//     req.body,
-//     signature,
-//     process.env.WEBHOOK_SECRET
-//   );
-//   if (!isValid) {
-//     console.log("Invalid webhook signature");
-//     return res.status(400).send("Invalid signature");
-//   }
-
-//   // Valid signature
-//   const payload = req.body;
-//   console.log("Valid webhook received:", payload.event);
-//   if (payload.event === "payment.captured") {
-//     const payment = payload.payload.payment.entity;
-//     const bookingId = payment.notes.bookingId;
-//     const amount = payment.amount / 100;
-//     const transactionId = payment.order_id;
-//     const status = "PENDING";
-//     const razorpay_payment_id = payment.id;
-//     console.log(payment, bookingId);
-//     await fetch("http://localhost:3000/transaction", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         bookingId,
-//         status,
-//       }),
-//     });
-//     res.status(200).send("OK");
-//   }
-//   if (payload.event === "order.paid") {
-//     const payment = payload.payload.payment.entity;
-//     const bookingId = payment.notes.bookingId;
-//     const amount = payment.amount / 100;
-//     const transactionId = payment.order_id;
-//     let status = "COMPLETED";
-//     const razorpay_payment_id = payment.id;
-//     console.log(payment, bookingId);
-//     await fetch("http://localhost:3000/transaction", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         bookingId,
-//         status,
-//       }),
-//     });
-//     const data = await refundPayment(razorpay_payment_id,payment.amount)
-//     if(data){
-//       const status = "REFUNDED"
-//       const transactionId=data.id;
-//       await fetch("http://localhost:3000/transaction", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         bookingId,
-//         status,
-//       })});
-//     }
-//   res.status(200);
-//   }
-
-//   if (payload.event === "payment.failed") {
-//     const payment = payload.payload.payment.entity;
-//     const bookingId = payment.notes.bookingId;
-//     const amount = payment.amount / 100;
-//     const status = "FAILED";
-//     const razorpay_payment_id = payment.id;
-//     console.log(payment, bookingId);
-//     await fetch("http://localhost:3000/transaction", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         bookingId,
-//         status,
-//       }),
-//     });
-//   res.status(200).send("OK");
-//   }
-// });
 router.post("/webhook", async (req, res) => {
   const signature = req.headers["x-razorpay-signature"];
 
@@ -188,8 +97,6 @@ router.post("/webhook", async (req, res) => {
     console.log("Invalid webhook signature");
     return res.status(400).send("Invalid signature");
   }
-
-  // Valid signature
   const payload = req.body;
   console.log("Valid webhook received:", payload.event);
   
@@ -223,8 +130,6 @@ router.post("/webhook", async (req, res) => {
     let status = "COMPLETED";
     const razorpay_payment_id = payment.id;
     console.log(payment, bookingId);
-    
-    // Update status to COMPLETED first
     await fetch("http://localhost:3000/transaction", {
       method: "POST",
       headers: {
@@ -235,8 +140,6 @@ router.post("/webhook", async (req, res) => {
         status,
       }),
     });
-    
-    // Then process refund
     try {
       const data = await refundPayment(razorpay_payment_id, payment.amount);
       if (data) {
@@ -253,6 +156,7 @@ router.post("/webhook", async (req, res) => {
           })
         });
       }
+    res.status(200).send("OK");
     } catch (error) {
       console.error("Refund failed:", error);
     }

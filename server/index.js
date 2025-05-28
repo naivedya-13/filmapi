@@ -22,11 +22,11 @@ const axios = require('axios');
 
 setInterval(async () => {
   try {
+    await axios.get('http://localhost:3000/sync-screens');
     await axios.get('http://localhost:3000/sync-cinemas');
     await axios.get('http://localhost:3000/sync-films');
-    await axios.get('http://localhost:3000/sync-screens');
-    await axios.get('http://localhost:3000/sync-sessions');
     await axios.get('http://localhost:3000/filmformat');
+    await axios.get('http://localhost:3000/sync-sessions');
     console.log('Routes called at', new Date().toLocaleTimeString());
   } catch (error) {
     console.error('Error calling routes:', error.message);

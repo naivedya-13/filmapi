@@ -60,7 +60,7 @@ async function syncSession() {
               await tx.session.upsert({
                 where: { ID: sessionData.ID },
                 update: {
-                    CinemaId: sessionData.CinemaId,
+                  CinemaId:sessionData.CinemaId,
                   cinema: sessionData.cinema,
                   ScheduledFilmId: sessionData.ScheduledFilmId,
                   SessionId: sessionData.SessionId,

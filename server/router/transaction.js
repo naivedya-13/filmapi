@@ -23,36 +23,12 @@ const fetchPaymentMethod = async (paymentId) => {
     return "Error fetching payment details:", error.response.data;
   }
 };
-
-// router.post("/transaction", async (req, res) => {
-//   try {
-//     const { bookingId, amount,status} = req.body;
-
-   
-//       await prisma.booking.updateMany({
-//         where:{
-//           bookingId: bookingId
-//         },
-//         data: {
-//           Transactionstatus: status,
-//         },
-//       });
-//     res.status(200).json({ success: true });
-//   } catch (error) {
-//     console.error("Transaction error:", error);
-//     res.status(500).json({ error: "Failed to process transaction" });
-//   }
-// });
-
-// Transaction handler endpoint
 router.post("/transaction", async (req, res) => {
   try {
     const { bookingId, status } = req.body;
-
-    // Update booking status using SessionId (not bookingId)
     await prisma.booking.updateMany({
       where: {
-        SessionId: bookingId, // Use SessionId as the field name
+        SessionId: bookingId, 
       },
       data: {
         Transactionstatus: status
