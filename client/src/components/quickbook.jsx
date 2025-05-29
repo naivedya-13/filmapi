@@ -30,7 +30,7 @@ const Quickbook = () => {
     options: false,
     session: false,
   });
-  const [selectionOrder, setSelectionOrder] = useState([]);
+  const [selectionPriority, setSelectionPriority] = useState([]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -57,7 +57,7 @@ const Quickbook = () => {
 
   useEffect(() => {
     const fetchFilteredOptions = async () => {
-      if (selectionOrder.length === 0) {
+      if (selectionPriority.length === 0) {
         setAvailableCinemas(cinemas);
         setAvailableFilms(allFilms);
         setAvailableDates(allDates);
@@ -71,10 +71,15 @@ const Quickbook = () => {
       try {
         setLoading(prev => ({ ...prev, options: true }));
         const params = new URLSearchParams({ action: 'get-options' });
-        selectionOrder.forEach(field => {
-          if (field === 'cinema' && selectedCinema) params.append('cinemaId', selectedCinema);
-          else if (field === 'film' && selectedFilm) params.append('filmId', selectedFilm);
-          else if (field === 'date' && selectedDate) params.append('selectedDate', selectedDate);
+
+        selectionPriority.forEach(field => {
+          if (field === 'cinema' && selectedCinema) {
+            params.append('cinemaId', selectedCinema);
+          } else if (field === 'film' && selectedFilm) {
+            params.append('filmId', selectedFilm);
+          } else if (field === 'date' && selectedDate) {
+            params.append('selectedDate', selectedDate);
+          }
         });
 
         const response = await fetch(`http://localhost:3000/booking-data?${params}`);
@@ -101,7 +106,7 @@ const Quickbook = () => {
     };
 
     fetchFilteredOptions();
-  }, [selectedCinema, selectedFilm, selectedDate, selectionOrder, cinemas, allFilms, allDates]);
+  }, [selectedCinema, selectedFilm, selectedDate, selectionPriority, cinemas, allFilms, allDates]);
 
   useEffect(() => {
     if (selectedTime && selectedCinema && selectedFilm) {
@@ -118,9 +123,9 @@ const Quickbook = () => {
           const response = await fetch(`http://localhost:3000/booking-data?${params}`);
           if (!response.ok) throw new Error('Failed to fetch session details');
           const data = await response.json();
-          if (data?.SessionId) {
-            setSessionId(data.SessionId);
-            setScreenNumber(data.ScreenNumber);
+          if (data && data.length > 0) {
+            setSessionId(data[0].SessionId);
+            setScreenNumber(data[0].ScreenNumber);
           } else {
             throw new Error('No session found for the selected time');
           }
@@ -140,48 +145,48 @@ const Quickbook = () => {
   const handleSelectionChange = (type, value) => {
     setError(null);
 
-    // Reset if selecting "Choose" option
     if (value === '') {
-      const fieldIndex = selectionOrder.indexOf(type);
-      if (fieldIndex !== -1) {
-        const newOrder = selectionOrder.slice(0, fieldIndex);
-        setSelectionOrder(newOrder);
-        const fieldsToReset = selectionOrder.slice(fieldIndex);
+      const currentIndex = selectionPriority.indexOf(type);
+      if (currentIndex !== -1) {
+        const newPriority = selectionPriority.slice(0, currentIndex);
+        setSelectionPriority(newPriority);
+        
+        const fieldsToReset = selectionPriority.slice(currentIndex);
         fieldsToReset.forEach(field => {
           if (field === 'cinema') setSelectedCinema('');
           else if (field === 'film') setSelectedFilm('');
           else if (field === 'date') setSelectedDate('');
         });
       }
+      
       setSelectedTime('');
       setSessionId(null);
       setScreenNumber(null);
       return;
     }
 
-    // Update selection order
-    const fieldIndex = selectionOrder.indexOf(type);
-    if (fieldIndex === -1 && selectionOrder.length < 3) {
-      setSelectionOrder(prev => [...prev, type]);
-    } else if (fieldIndex !== -1) {
-      const newOrder = selectionOrder.slice(0, fieldIndex + 1);
-      setSelectionOrder(newOrder);
-      const fieldsToReset = selectionOrder.slice(fieldIndex + 1);
-      fieldsToReset.forEach(field => {
-        if (field === 'cinema') setSelectedCinema('');
-        else if (field === 'film') setSelectedFilm('');
-        else if (field === 'date') setSelectedDate('');
-      });
-    }
-
-    // Update selected value
     if (type === 'cinema') setSelectedCinema(value);
     else if (type === 'film') setSelectedFilm(value);
     else if (type === 'date') setSelectedDate(value);
     else if (type === 'time') setSelectedTime(value);
-
-    // Reset time and session data if not changing time
     if (type !== 'time') {
+      const currentIndex = selectionPriority.indexOf(type);
+      
+      if (currentIndex === -1) {
+        if (selectionPriority.length < 3) {
+          setSelectionPriority(prev => [...prev, type]);
+        }
+      } else {
+        const newPriority = selectionPriority.slice(0, currentIndex + 1);
+        setSelectionPriority(newPriority);
+        
+        const fieldsToReset = selectionPriority.slice(currentIndex + 1);
+        fieldsToReset.forEach(field => {
+          if (field === 'cinema') setSelectedCinema('');
+          else if (field === 'film') setSelectedFilm('');
+          else if (field === 'date') setSelectedDate('');
+        });
+      }
       setSelectedTime('');
       setSessionId(null);
       setScreenNumber(null);
@@ -196,7 +201,7 @@ const Quickbook = () => {
     setTimes([]);
     setSessionId(null);
     setScreenNumber(null);
-    setSelectionOrder([]);
+    setSelectionPriority([]);
     setError(null);
   };
 
@@ -234,11 +239,6 @@ const Quickbook = () => {
 
   const isTimeDisabled = !selectedCinema || !selectedFilm || !selectedDate;
 
-  const getPriorityNumber = field => {
-    const index = selectionOrder.indexOf(field);
-    return index !== -1 ? index + 1 : null;
-  };
-
   const getFieldName = field => {
     switch (field) {
       case 'cinema':
@@ -252,6 +252,17 @@ const Quickbook = () => {
     }
   };
 
+  const getSelectedValueDisplay = (field) => {
+    if (field === 'cinema' && selectedCinema) {
+      return cinemas.find(c => c.id == selectedCinema)?.name || 'Selected Cinema';
+    } else if (field === 'film' && selectedFilm) {
+      return allFilms.find(f => f.movie_id == selectedFilm)?.movie_title || 'Selected Movie';
+    } else if (field === 'date' && selectedDate) {
+      return formatDate(selectedDate);
+    }
+    return '';
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -262,7 +273,7 @@ const Quickbook = () => {
           </h2>
           <button
             onClick={resetAllSelections}
-            className="text-white hover:bg-blue-700 px-3 py-1 rounded flex items-center text-sm"
+            className="text-white hover:bg-blue-700 px-3 py-1 rounded flex items-center text-sm transition-colors"
           >
             <RotateCcw size={16} className="mr-1" />
             Reset All
@@ -274,42 +285,28 @@ const Quickbook = () => {
             <div className="bg-red-100 text-red-800 p-3 rounded mb-4">{error}</div>
           )}
 
-          {selectionOrder.length > 0 && (
-            <div className="mb-4 p-3 bg-green-50 rounded-md">
-              <p className="text-sm text-green-800 font-medium">
-                Selection Priority:{' '}
-                {selectionOrder.map((field, index) => (
-                  <span key={field} className="ml-2 bg-green-200 px-2 py-1 rounded text-xs">
-                    {getFieldName(field)}: {index + 1}
-                  </span>
-                ))}
-              </p>
-              <p className="text-xs text-green-600 mt-1">
-                Options are filtered based on your selection order. Changing a selection resets subsequent choices.
-              </p>
+          
+
+          {loading.initial && (
+            <div className="text-center text-gray-500 py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              Loading initial data...
             </div>
           )}
 
-          {loading.initial && (
-            <div className="text-center text-gray-500">Loading initial data...</div>
-          )}
-
           {!loading.initial && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {/* Cinema Selection */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Film className="inline mr-1" size={16} />
                   Select Cinema
-                  {getPriorityNumber('cinema') && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      Priority {getPriorityNumber('cinema')}
-                    </span>
-                  )}
+                
                 </label>
                 <select
                   onChange={e => handleSelectionChange('cinema', e.target.value)}
                   value={selectedCinema}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   disabled={loading.options}
                 >
                   <option value="">Choose cinema</option>
@@ -320,32 +317,36 @@ const Quickbook = () => {
                   ))}
                 </select>
                 {loading.options && (
-                  <div className="text-xs text-gray-500 mt-1">Loading cinemas...</div>
-                )}
-                {availableCinemas.length === 0 && !loading.options && (selectedDate || selectedFilm) && (
-                  <div className="text-xs text-orange-600 mt-1">
-                    No cinemas available for selected filters
+                  <div className="text-xs text-blue-500 mt-1 flex items-center">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-500 mr-1"></div>
+                    Updating cinemas...
                   </div>
                 )}
-                <div className="text-xs text-gray-500 mt-1">
-                  Available: {availableCinemas.length} options
+                <div className="flex justify-between items-center mt-1">
+                  <div className="text-xs text-gray-500">
+                    Available: {availableCinemas.length} options
+                  </div>
+                  {availableCinemas.length === 0 && !loading.options && selectionPriority.length > 0 && (
+                    <div className="text-xs text-orange-600">
+                      No cinemas for current filters
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* Movie Selection */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Film className="inline mr-1" size={16} />
                   Select Movie
-                  {getPriorityNumber('film') && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      Priority {getPriorityNumber('film')}
-                    </span>
-                  )}
+                
+
+
                 </label>
                 <select
                   onChange={e => handleSelectionChange('film', e.target.value)}
                   value={selectedFilm}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   disabled={loading.options}
                 >
                   <option value="">Choose movie</option>
@@ -356,32 +357,34 @@ const Quickbook = () => {
                   ))}
                 </select>
                 {loading.options && (
-                  <div className="text-xs text-gray-500 mt-1">Loading movies...</div>
-                )}
-                {availableFilms.length === 0 && !loading.options && (selectedDate || selectedCinema) && (
-                  <div className="text-xs text-orange-600 mt-1">
-                    No movies available for selected filters
+                  <div className="text-xs text-blue-500 mt-1 flex items-center">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-500 mr-1"></div>
+                    Updating movies...
                   </div>
                 )}
-                <div className="text-xs text-gray-500 mt-1">
-                  Available: {availableFilms.length} options
+                <div className="flex justify-between items-center mt-1">
+                  <div className="text-xs text-gray-500">
+                    Available: {availableFilms.length} options
+                  </div>
+                  {availableFilms.length === 0 && !loading.options && selectionPriority.length > 0 && (
+                    <div className="text-xs text-orange-600">
+                      No movies for current filters
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* Date Selection */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="inline mr-1" size={16} />
                   Select Date
-                  {getPriorityNumber('date') && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      Priority {getPriorityNumber('date')}
-                    </span>
-                  )}
+              
                 </label>
                 <select
                   onChange={e => handleSelectionChange('date', e.target.value)}
                   value={selectedDate}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   disabled={loading.options}
                 >
                   <option value="">Choose date</option>
@@ -392,27 +395,33 @@ const Quickbook = () => {
                   ))}
                 </select>
                 {loading.options && (
-                  <div className="text-xs text-gray-500 mt-1">Loading dates...</div>
-                )}
-                {availableDates.length === 0 && !loading.options && (selectedCinema || selectedFilm) && (
-                  <div className="text-xs text-orange-600 mt-1">
-                    No dates available for selected filters
+                  <div className="text-xs text-blue-500 mt-1 flex items-center">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-500 mr-1"></div>
+                    Updating dates...
                   </div>
                 )}
-                <div className="text-xs text-gray-500 mt-1">
-                  Available: {availableDates.length} options
+                <div className="flex justify-between items-center mt-1">
+                  <div className="text-xs text-gray-500">
+                    Available: {availableDates.length} options
+                  </div>
+                  {availableDates.length === 0 && !loading.options && selectionPriority.length > 0 && (
+                    <div className="text-xs text-orange-600">
+                      No dates for current filters
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* Time Selection */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Clock className="inline mr-1" size={16} />
                   Select Time
                 </label>
                 <select
                   onChange={e => handleSelectionChange('time', e.target.value)}
                   value={selectedTime}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100"
                   disabled={isTimeDisabled || loading.options}
                 >
                   <option value="">
@@ -423,79 +432,72 @@ const Quickbook = () => {
                       {new Date(session.show_time).toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
-                      })}
+                      })} - Screen {session.screen_number}
                     </option>
                   ))}
                 </select>
-                {isTimeDisabled && !loading.options && (
-                  <div className="text-xs text-yellow-600 mt-1">
-                    Complete all selections to see available times
+                <div className="flex justify-between items-center mt-1">
+                  <div className="text-xs text-gray-500">
+                    Available: {times.length} time slots
                   </div>
-                )}
-                <div className="text-xs text-gray-500 mt-1">
-                  Available: {times.length} time slots
+                  {isTimeDisabled && (
+                    <div className="text-xs text-yellow-600">
+                      Complete all selections first
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {selectionOrder.length > 0 && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-md">
-              <p className="text-sm text-blue-800">
-                <strong>Current Selection:</strong>
-                {selectionOrder
-                  .map(field => {
-                    let value = '';
-                    if (field === 'cinema' && selectedCinema) {
-                      value = cinemas.find(c => c.id == selectedCinema)?.name;
-                    } else if (field === 'film' && selectedFilm) {
-                      value = allFilms.find(f => f.movie_id == selectedFilm)?.movie_title;
-                    } else if (field === 'date' && selectedDate) {
-                      value = formatDate(selectedDate);
-                    }
-                    return value ? ` | ${getFieldName(field)}: ${value}` : '';
-                  })
-                  .join('')}
-                {selectedTime &&
-                  ` | Time: ${new Date(selectedTime).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}`}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Priority-based filtering: Options filtered by selection order (1 → 2 → 3)
-              </p>
+          {/* Current Selection Summary */}
+          {selectionPriority.length > 0 && (
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
+                <ArrowRight className="mr-1" size={14} />
+                Current Selection Summary
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {selectionPriority.map((field, index) => {
+                  const value = getSelectedValueDisplay(field);
+                  return value ? (
+                    <div key={field} className="flex items-center">
+                      <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs mr-2">
+                        {index + 1}
+                      </span>
+                      <span className="text-gray-600">{getFieldName(field)}:</span>
+                      <span className="ml-1 font-medium text-gray-800">{value}</span>
+                    </div>
+                  ) : null;
+                })}
+                {selectedTime && (
+                  <div className="flex items-center">
+                    <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs mr-2">
+                      T
+                    </span>
+                    <span className="text-gray-600">Time:</span>
+                    <span className="ml-1 font-medium text-gray-800">
+                      {new Date(selectedTime).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
+          {/* Book Button */}
           <div className="mt-6 flex justify-end">
             <button
               onClick={handleBooking}
               disabled={!sessionId || !screenNumber || loading.session}
-              className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition flex items-center"
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-all flex items-center font-medium shadow-md hover:shadow-lg"
             >
               {loading.session ? (
                 <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b border-white mr-2"></div>
                   Processing...
                 </>
               ) : (
